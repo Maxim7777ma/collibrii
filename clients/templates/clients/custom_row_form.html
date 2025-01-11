@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Додати рядок до таблиці - {{ table.name }}</title>
+    <link rel="stylesheet" href="{% static 'css/tableform.css' %}">
+</head>
+<body>
+    <h1>Додати рядок до таблиці: {{ table.name }}</h1>
+
+    <!-- Форма додавання рядка -->
+    <form method="POST" class="table-form" id="data-form">
+        {% csrf_token %}
+        
+        <!-- Відображення помилок -->
+        {% if form.errors %}
+            <div class="error-messages">
+                <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ field.label }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Виведення автоматичних полів -->
+        {% for field in form %}
+            {% if field.name not in "deal_amount,deal_amount_currency,paid_amount,paid_amount_currency,expected_profit,expected_profit_currency,contact" %}
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            {% endif %}
+        {% endfor %}
+
+        <!-- Контакт -->
+        <label for="id_contact">Контакт:</label>
+        <select id="id_contact" name="contact" value="contact">
+            <option value="contact_1" {% if form.initial.contact == "contact_1" %}selected{% endif %}>Контакт 1</option>
+            <option value="contact_2" {% if form.initial.contact == "contact_2" %}selected{% endif %}>Контакт 2</option>
+            <option value="contact_3" {% if form.initial.contact == "contact_3" %}selected{% endif %}>Контакт 3</option>
+            <option value="contact_4" {% if form.initial.contact == "contact_4" %}selected{% endif %}>Контакт 4</option>
+        </select>
+
+        <!-- Зміна статусу на "Клієнт" при виборі -->
+        
+
+        <!-- Сума угоди -->
+        <label for="id_deal_amount">Сума угоди:</label>
+        <div class="input-group">
+            <input type="number" id="id_deal_amount" name="deal_amount" 
+                   value="{{ last_values.deal_amount|floatformat }}" step="0.01" placeholder="{{ last_values.deal_amount|floatformat }}">
+            <select id="id_deal_amount_currency" name="deal_amount_currency">
+                <option value="UAH" {% if last_values.deal_amount_currency == "UAH" %}selected{% endif %}>UAH</option>
+                <option value="USD" {% if last_values.deal_amount_currency == "USD" %}selected{% endif %}>USD</option>
+                <option value="EUR" {% if last_values.deal_amount_currency == "EUR" %}selected{% endif %}>EUR</option>
+            </select>
+        </div>
+
+        <!-- Оплачена сума -->
+        <label for="id_paid_amount">Оплачена сума:</label>
+        <div class="input-group">
+            <input type="number" id="id_paid_amount" name="paid_amount" 
+                   value="{{ last_values.paid_amount|floatformat }}" step="0.01" placeholder="{{ last_values.paid_amount|floatformat }}">
+            <select id="id_paid_amount_currency" name="paid_amount_currency">
+                <option value="UAH" {% if last_values.paid_amount_currency == "UAH" %}selected{% endif %}>UAH</option>
+                <option value="USD" {% if last_values.paid_amount_currency == "USD" %}selected{% endif %}>USD</option>
+                <option value="EUR" {% if last_values.paid_amount_currency == "EUR" %}selected{% endif %}>EUR</option>
+            </select>
+        </div>
+
+        <!-- Очікуваний прибуток -->
+        <label for="id_expected_profit">Очікуваний прибуток:</label>
+        <div class="input-group">
+            <input type="number" id="id_expected_profit" name="expected_profit" 
+                   value="{{ last_values.expected_profit|floatformat }}" step="0.01" placeholder="{{ last_values.expected_profit|floatformat }}">
+            <select id="id_expected_profit_currency" name="expected_profit_currency">
+                <option value="UAH" {% if last_values.expected_profit_currency == "UAH" %}selected{% endif %}>UAH</option>
+                <option value="USD" {% if last_values.expected_profit_currency == "USD" %}selected{% endif %}>USD</option>
+                <option value="EUR" {% if last_values.expected_profit_currency == "EUR" %}selected{% endif %}>EUR</option>
+            </select>
+        </div>
+
+        <!-- Кнопки -->
+        <button type="submit" class="btn-save">Зберегти</button>
+        <a href="{% url 'custom_row_list' table.id %}" class="btn-cancel">Скасувати</a>
+    </form>
+
+    <!-- Скрипт для автоматичної зміни статусу -->
+    <script>
+        function updateStatus() {
+            // Отримуємо вибраний контакт для зміни статусу
+            const selectedContact = document.getElementById('id_change_status_contact').value;
+
+            // Поточний вибраний контакт
+            const currentContact = document.getElementById('id_contact').value;
+
+            // Якщо контакт збігається з вибраним для зміни статусу
+            if (currentContact === selectedContact) {
+                document.getElementById('id_status').value = 'client'; // Змінюємо статус на "Клієнт"
+            } else {
+                document.getElementById('id_status').value = 'lead'; // Повертаємо на "Лід"
+            }
+        }
+
+        // Додаємо прослуховувачі до полів
+        document.getElementById('id_contact').addEventListener('change', updateStatus);
+        document.getElementById('id_change_status_contact').addEventListener('change', updateStatus);
+    </script>
+</body>
+</html>

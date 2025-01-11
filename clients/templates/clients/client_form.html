@@ -1,0 +1,102 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма клиента</title>
+    <link rel="stylesheet" href="{% static 'css/clientform.css' %}">
+    
+</head>
+<body>
+    <h1>{% if form.instance.pk %}Редактировать клиента{% else %}Добавить клиента{% endif %}</h1>
+
+    <!-- Сообщение о дубликате -->
+    <div id="duplicate-warning" style="display: none; color: red;">
+        Ссылка уже существует! Вы уверены, что хотите добавить дубликат?
+        <button type="button" onclick="confirmDuplicate()">Да</button>
+        <button type="button" onclick="rejectDuplicate()">Нет</button>
+    </div>
+
+    <form method="POST" class="client-form" id="client-form">
+        {% csrf_token %}
+        <label for="id_name">Имя:</label>
+        {{ form.name }}
+
+        <label for="id_instagram_link">Instagram:</label>
+        <input type="url" id="id_instagram_link" name="instagram_link" required value="{{ form.instance.instagram_link }}" oninput="checkDuplicate()">
+
+        <label for="id_status">Статус:</label>
+        {{ form.status }}
+
+        <label for="id_manager">Менеджер:</label>
+        {{ form.manager }}
+
+        <label for="id_city">Город:</label>
+        {{ form.city }}
+
+        <label for="id_contact_1">Контакт 1:</label>
+        {{ form.contact_1 }}
+
+        <label for="id_contact_2">Контакт 2:</label>
+        {{ form.contact_2 }}
+
+        <label for="id_contact_3">Контакт 3:</label>
+        {{ form.contact_3 }}
+
+        <label for="id_contact_4">Контакт 4:</label>
+        {{ form.contact_4 }}
+
+        <!-- Скрытое поле для подтверждения -->
+        <input type="hidden" id="confirm_duplicate" name="confirm_duplicate" value="no">
+
+        <button type="submit" class="btn-save">Сохранить</button>
+        <a href="{% url 'client_list' %}" class="btn-cancel">Отмена</a>
+    </form>
+
+    <script>
+        let isDuplicate = false;  // Флаг для хранения состояния дубликата
+
+        // Проверка ссылки на дубликат
+        function checkDuplicate() {
+            const link = document.getElementById('id_instagram_link').value; // Получаем ссылку
+            if (!link) return; // Если ссылка пустая, ничего не делаем
+
+            fetch('{% url "check_duplicate_link" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `link=${link}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_duplicate) { // Если дубликат найден
+                    document.getElementById('duplicate-warning').style.display = 'block'; // Показываем предупреждение
+                    isDuplicate = true;  // Устанавливаем флаг дубликата
+                } else {
+                    document.getElementById('duplicate-warning').style.display = 'none'; // Скрываем предупреждение
+                    isDuplicate = false; // Сбрасываем флаг дубликата
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка проверки дубликатов:', error);
+            });
+        }
+
+        // Подтверждение создания дубликата
+        function confirmDuplicate() {
+            document.getElementById('confirm_duplicate').value = 'yes'; // Разрешаем создание
+            document.getElementById('duplicate-warning').style.display = 'none'; // Скрываем предупреждение
+        }
+
+        // Отклонение создания дубликата
+        function rejectDuplicate() {
+            document.getElementById('confirm_duplicate').value = 'no'; // Запрещаем создание
+            document.getElementById('id_instagram_link').value = ''; // Очищаем ссылку
+            document.getElementById('duplicate-warning').style.display = 'none'; // Скрываем предупреждение
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+/* Улучшенные стили для таблицы клиентов */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #ffffff 0%, #ccd5fa 100%);
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.filter-form input, 
+.filter-form select, 
+.filter-form button {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.filter-form input:focus, 
+.filter-form select:focus {
+    border-color: #6a82fb;
+    box-shadow: 0 0 8px rgba(106, 130, 251, 0.5);
+    outline: none;
+}
+
+.filter-form button {
+    background-color: #6a82fb;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.filter-form button:hover {
+    background-color: #4a69bd;
+    transform: translateY(-3px);
+}
+
+/* Таблица клиентов */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+th, td {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+th {
+    background-color: #6a82fb;
+    color: white;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+tr:hover {
+    background-color: #e6f7ff;
+    cursor: pointer;
+}
+
+/* Подсветка дубликатов */
+tr.duplicate {
+    background-color: #da6577;
+    animation: highlight 0.5s ease-in-out;
+}
+
+/* Кнопки действий */
+.btn-add, .btn-edit, .btn-delete, .btn-main {
+    padding: 10px 15px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: 500;
+}
+
+.btn-add {
+    background-color: #4caf50;
+    color: white;
+}
+
+.btn-add:hover {
+    background-color: #45a049;
+    transform: translateY(-3px);
+}
+
+.btn-edit {
+    background-color: #ffa500;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #e69500;
+    transform: translateY(-3px);
+}
+
+.btn-delete {
+    background-color: #ff4b5c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #d32f2f;
+    transform: translateY(-3px);
+}
+
+.btn-main {
+    background-color: #6a82fb;
+    color: white;
+}
+
+.btn-main:hover {
+    background-color: #4a69bd;
+    transform: translateY(-3px);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes highlight {
+    0% {
+        background-color: #ffebee;
+    }
+    100% {
+        background-color: #ffe6e6;
+    }
+}

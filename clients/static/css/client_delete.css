@@ -1,0 +1,33 @@
+/* Общие стили */
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    padding: 0;
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+/* Форма подтверждения */
+form {
+    display: inline-block;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #F44336;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-cancel {
+    padding: 10px 20px;
+    background-color: #9E9E9E;
+    color: white;
+    text-decoration: none;
+    margin-left: 10px;
+}

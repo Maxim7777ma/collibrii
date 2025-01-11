@@ -1,0 +1,146 @@
+/* Общие стили */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+    color: #333;
+}
+
+/* Заголовок */
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+/* Кнопки */
+.btn-add, .btn-cancel, .btn-edit, .btn-delete {
+    padding: 10px 15px;
+    margin: 10px 5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* Кнопка "Добавить" */
+.btn-add {
+    background-color: #4caf50;
+    color: white;
+}
+
+.btn-add:hover {
+    background-color: #45a049;
+    transform: translateY(-3px);
+}
+
+/* Кнопка "Назад" */
+.btn-cancel {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background-color: #5a6268;
+    transform: translateY(-3px);
+}
+
+/* Кнопка "Редактировать" */
+.btn-edit {
+    background-color: #ffa500;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #e69500;
+    transform: translateY(-3px);
+}
+
+/* Кнопка "Удалить" */
+.btn-delete {
+    background-color: #ff4b5c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #d32f2f;
+    transform: translateY(-3px);
+}
+
+/* Таблица */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+th, td {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+/* Заголовок таблицы */
+th {
+    background-color: #6a82fb;
+    color: white;
+    font-weight: bold;
+}
+
+/* Чередующиеся строки */
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+/* Наведение на строку */
+tr:hover {
+    background-color: #e6f7ff;
+    cursor: pointer;
+}
+
+/* Подсветка дубликатов */
+tr.duplicate {
+    background-color: #ffebee;
+    animation: highlight 0.5s ease-in-out;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes highlight {
+    0% {
+        background-color: #ffebee;
+    }
+    100% {
+        background-color: #ffe6e6;
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    table {
+        font-size: 0.9rem;
+    }
+
+    .btn-add, .btn-cancel, .btn-edit, .btn-delete {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+}

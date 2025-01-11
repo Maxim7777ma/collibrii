@@ -1,0 +1,192 @@
+/* Общие стили */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+    color: #333;
+    animation: fadeInBackground 1.5s ease;
+}
+
+/* Анимация появления фона */
+@keyframes fadeInBackground {
+    from {
+        background-color: #fff;
+    }
+    to {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+}
+
+/* Заголовок */
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #2c3e50;
+    font-size: 32px;
+    font-weight: 700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    animation: slideDown 0.6s ease-out;
+}
+
+/* Анимация для заголовка */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Кнопки */
+.btn-add, .btn-cancel, .btn-edit, .btn-delete {
+    padding: 10px 20px;
+    margin: 10px 5px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Кнопка "Добавить" */
+.btn-add {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-add:hover {
+    background-color: #66bb6a;
+    transform: translateY(-3px) scale(1.05);
+}
+
+/* Кнопка "Назад" */
+.btn-cancel {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background-color: #828d94;
+    transform: translateY(-3px) scale(1.05);
+}
+
+/* Кнопка "Редактировать" */
+.btn-edit {
+    background-color: #FF9800;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #FFB74D;
+    transform: translateY(-3px) scale(1.05);
+}
+
+/* Кнопка "Удалить" */
+.btn-delete {
+    background-color: #FF5252;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #FF867C;
+    transform: translateY(-3px) scale(1.05);
+}
+
+/* Таблица */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+    animation: fadeInTable 0.7s ease-in-out;
+}
+
+@keyframes fadeInTable {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Заголовок таблицы */
+th {
+    background: #34495e;
+    color: white;
+    font-weight: bold;
+    text-align: left;
+    padding: 15px;
+    text-transform: uppercase;
+    font-size: 14px;
+}
+
+th:hover {
+    background: #2c3e50;
+    cursor: pointer;
+}
+
+/* Чередующиеся строки */
+tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* Наведение на строку */
+tr:hover {
+    background-color: #e9f7ef;
+    transition: background-color 0.3s ease;
+}
+
+/* Строки таблицы */
+td {
+    padding: 15px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    color: #555;
+}
+
+/* Подсветка дубликатов */
+tr.duplicate {
+    background-color: #ffe6e6;
+    animation: blink 0.7s alternate infinite;
+}
+
+@keyframes blink {
+    0% {
+        background-color: #ffe6e6;
+    }
+    100% {
+        background-color: #ffcccc;
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    th, td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .btn-add, .btn-cancel, .btn-edit, .btn-delete {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}

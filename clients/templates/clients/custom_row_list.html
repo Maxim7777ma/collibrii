@@ -1,0 +1,187 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ table.name }} - Строки</title>
+    <link rel="stylesheet" href="{% static 'css/tablelist1.css' %}">
+</head>
+<body>
+    <h1>Таблиця: {{ table.name }}</h1>
+    
+    <!-- Кнопки навігації -->
+    <a href="{% url 'add_row' table.id %}" class="btn-add">Додати рядок</a>
+    <a href="{% url 'custom_table_list' %}" class="btn-cancel">Назад</a>
+
+    <!-- Таблиця рядків -->
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Ім'я</th>
+                <th>Instagram</th>
+                <th>Телефон</th>
+                <th>Менеджер</th>
+                <th>Статус</th>
+                <th>Контакт</th>
+                <th>Сума угоди</th>
+                <th>Оплачена сума</th>
+                <th>Очікуваний прибуток</th>
+                <th>Дата створення</th>
+                <th>Дата запису</th>
+                <th>Дата виконання</th>
+                <th>Дата звернення</th>
+                <th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr {% if row.instagram_link in duplicate_links or row.phone_number in duplicate_phones %} class="duplicate" {% endif %}>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ row.name }}</td>
+                <td>
+                    <a href="{{ row.instagram_link }}" target="_blank">
+                        {{ row.instagram_link }}
+                    </a>
+                </td>
+                <td>{{ row.phone_number }}</td>
+                <td>{{ row.manager }}</td>
+    
+                <!-- Статус -->
+                <td>
+                    <select id="status_{{ row.id }}" onchange="updateStatus('{{ row.id }}', this.value)">
+                        <option value="lead" {% if row.status == 'lead' %}selected{% endif %}>Лід</option>
+                        <option value="client" {% if row.status == 'client' %}selected{% endif %}>Клієнт</option>
+                        <option value="customer" {% if row.status == 'customer' %}selected{% endif %}>Замовник</option>
+                    </select>
+                </td>
+    
+                <!-- Контакт -->
+                <td>
+                    <select id="contact_{{ row.id }}" onchange="updateContact('{{ row.id }}', this.value)">
+                        <option value="contact_1" {% if row.contact == 'contact_1' %}selected{% endif %}>Контакт 1</option>
+                        <option value="contact_2" {% if row.contact == 'contact_2' %}selected{% endif %}>Контакт 2</option>
+                        <option value="contact_3" {% if row.contact == 'contact_3' %}selected{% endif %}>Контакт 3</option>
+                        <option value="contact_4" {% if row.contact == 'contact_4' %}selected{% endif %}>Контакт 4</option>
+                    </select>
+                </td>
+    
+                <!-- Суми та валюти -->
+                <td>{{ row.deal_amount }} {{ row.deal_amount_currency }}</td>
+                <td>{{ row.paid_amount }} {{ row.paid_amount_currency }}</td>
+                <td>{{ row.expected_profit }} {{ row.expected_profit_currency }}</td>
+    
+                <!-- Даты -->
+                <td>{{ row.record_date|date:"d F Y" }}</td>
+                <td>{{ row.record_date|date:"d F Y" }}</td>
+                <td>{{ row.due_date|date:"d F Y" }}</td>
+                <td>{{ row.inquiry_date|date:"d F Y" }}</td>
+    
+                <td>
+                    <a href="{% url 'edit_row' table.id row.id %}" class="btn-edit">Редагувати</a>
+                    <button class="btn-delete" 
+                        onclick="confirmDelete(this)" 
+                        data-table-id="{{ table.id }}" 
+                        data-row-id="{{ row.id }}" 
+                        data-row-number="{{ forloop.counter }}">
+                        Видалити
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="15">Немає даних</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Модальне вікно -->
+    <div id="deleteModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <p id="deleteText"></p>
+            <form id="deleteForm" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn-delete">Видалити</button>
+                <button type="button" class="btn-cancel" onclick="closeModal()">Скасувати</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript для модального вікна та оновлення даних -->
+    <script>
+        function confirmDelete(button) {
+            const tableId = button.getAttribute('data-table-id');
+            const rowId = button.getAttribute('data-row-id');
+            const rowNumber = button.getAttribute('data-row-number');
+        
+            document.getElementById('deleteText').innerText = `Ви впевнені, що хочете видалити рядок №${rowNumber}?`;
+            document.getElementById('deleteForm').action = `/clients/tables/${tableId}/delete/${rowId}/`;
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('deleteModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // Оновлення статусу
+        function updateStatus(rowId, status) {
+            fetch(`/update-status1/${rowId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `status=${status}`
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Сервер вернул ошибку');
+                }
+                return response.json();
+            }).then(data => {
+                if (data.success) {
+                    alert('Статус обновлен!');
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            }).catch(error => {
+                alert('Ошибка сети: ' + error.message);
+            });
+        }
+        
+        function updateContact(rowId, contact) {
+            fetch(`/update-contact1/${rowId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `contact=${contact}`
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Сервер вернул ошибку');
+                }
+                return response.json();
+            }).then(data => {
+                if (data.success) {
+                    alert('Контакт обновлен!');
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            }).catch(error => {
+                alert('Ошибка сети: ' + error.message);
+            });
+        }
+        
+    </script>
+    
+</body>
+</html>

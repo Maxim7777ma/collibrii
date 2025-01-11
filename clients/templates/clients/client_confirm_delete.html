@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Удалить клиента</title>
+    <link rel="stylesheet" href="{% static 'css/client_delete.css' %}">
+</head>
+<body>
+    <h1>Удалить клиента</h1>
+    <p>Вы уверены, что хотите удалить "{{ client.name }}"?</p>
+    <form method="POST" class="delete-form">
+        {% csrf_token %}
+        <button type="submit" class="btn-delete">Удалить</button>
+        <a href="{% url 'client_list' %}" class="btn-cancel">Отмена</a>
+    </form>
+</body>
+</html>

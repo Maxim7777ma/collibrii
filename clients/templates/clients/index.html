@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Главная Страница</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <section id="quick-actions">
+                    <h2>Быстрые действия</h2>
+                    <button onclick="window.location.href='{% url 'client_list_leads' %}'">Лиды</button>
+                    <button onclick="window.location.href='{% url 'client_list_clients' %}'">Клиенты</button>
+                    <button onclick="window.location.href='{% url 'client_list_customers' %}'">Заказчики</button>
+                    <button onclick="window.location.href='{% url 'client_create' %}'">Добавить клиента</button>
+                    <button onclick="window.location.href='/upload-excel/'">Загрузить Excel</button>
+                </section>
+                
+                <li><a href="{% url 'client_create' %}">Добавить клиента</a></li>
+                <li><a href="/upload-excel/">Загрузить Excel</a></li>
+                <li><a href="{% url 'logout' %}">Выход</a></li>
+                
+                
+                
+                <li><a href="{% url 'custom_table_create' %}" class="btn-add">Создать таблицу</a></li>
+                <li><a href="{% url 'custom_table_list' %}" class="btn-see">Смотреть все таблицы</a></li>
+                
+
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="dashboard">
+            <h1>Добро пожаловать в CRM</h1>
+            <p>Выберите действие из меню для работы с клиентами.</p>
+        </section>
+
+        <section id="client-stats">
+            <h2>Статистика клиентов</h2>
+            <ul>
+                <li>Всего клиентов: {{ total_clients }}</li>
+                <li>Лидов: {{ leads }}</li>
+                <li>Клиентов: {{ clients }}</li>
+                <li>Заказчиков: {{ customers }}</li>
+            </ul>
+        </section>
+
+        
+        <h2>Быстрые действия</h2>
+            <section id="quick-actions">
+                <h2>Быстрые действия</h2>
+                <button onclick="window.location.href='{% url 'client_list_leads' %}'">Лиды</button>
+                <button onclick="window.location.href='{% url 'client_list_clients' %}'">Клиенты</button>
+                <button onclick="window.location.href='{% url 'client_list_customers' %}'">Заказчики</button>
+                <button onclick="window.location.href='{% url 'client_list' %}'">Все клиенты</button>
+                <button onclick="window.location.href='{% url 'client_create' %}'">Добавить клиента</button>
+            </section>
+        
+    </main>
+
+    <footer>
+        <p>&copy; 2025 CRM System</p>
+    </footer>
+</body>
+</html>

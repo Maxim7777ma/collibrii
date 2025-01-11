@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Удалить клиента по ссылке</title>
+    <link rel="stylesheet" href="{% static 'css/client_delete_by_link.css' %}">
+</head>
+<body>
+    <h1>Удалить клиента по ссылке</h1>
+
+    <!-- Форма поиска клиента по ссылке -->
+    <form method="POST">
+        {% csrf_token %}
+        <label for="link">Введите ссылку клиента:</label>
+        <input type="text" id="link" name="link" placeholder="Ссылка на Instagram" required>
+        <button type="submit">Найти</button>
+    </form>
+
+    <!-- Если клиент найден -->
+    {% if client %}
+        <h2>Найден клиент:</h2>
+        <p><strong>Имя:</strong> {{ client.name }}</p>
+        <p><strong>Ссылка:</strong> <a href="{{ client.instagram_link }}" target="_blank">{{ client.instagram_link }}</a></p>
+        <p><strong>Статус:</strong> {{ client.get_status_display }}</p>
+        <p><strong>Менеджер:</strong> {{ client.manager }}</p>
+        <p><strong>Город:</strong> {{ client.city }}</p>
+        <p><strong>Заметки:</strong> {{ client.notes }}</p>
+
+        <!-- Форма подтверждения удаления -->
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="link" value="{{ client.instagram_link }}">
+            <button type="submit" name="confirm">Подтвердить удаление</button>
+        </form>
+    {% endif %}
+
+    <!-- Если клиент не найден -->
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <a href="{% url 'client_list' %}" class="btn-cancel">Назад</a>
+</body>
+</html>

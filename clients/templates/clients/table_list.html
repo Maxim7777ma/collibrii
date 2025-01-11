@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список таблиц</title>
+    <link rel="stylesheet" href="{% static 'css/clientlist.css' %}">
+</head>
+<body>
+    <h1>Список таблиц</h1>
+    <a href="{% url 'custom_table_create' %}" class="btn-add">Создать новую таблицу</a>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Название</th>
+                <th>Описание</th>
+                <th>Дата создания</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for table in tables %}
+            <tr>
+                <td>{{ table.id }}</td>
+                <td>{{ table.name }}</td>
+                <td>{{ table.description }}</td>
+                <td>{{ table.created_at }}</td>
+                <td>
+                    <a href="{% url 'custom_row_list' table.id %}" class="btn-edit">Открыть</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">Нет созданных таблиц</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
