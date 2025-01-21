@@ -11,7 +11,7 @@
     <h1>Додати рядок до таблиці: {{ table.name }}</h1>
 
     <!-- Форма додавання рядка -->
-    <form method="POST" class="table-form" id="data-form">
+    <form method="POST" class="table-form" id="data-form" data-pk="{{ form.instance.pk }}" data-change-status-contact="{{ form.instance.change_status_contact }}">
         {% csrf_token %}
         
         <!-- Відображення помилок -->
@@ -38,6 +38,8 @@
             {% endif %}
         {% endfor %}
 
+        
+            
         <!-- Контакт -->
         <label for="id_contact">Контакт:</label>
         <select id="id_contact" name="contact" value="contact">
@@ -47,8 +49,6 @@
             <option value="contact_4" {% if form.initial.contact == "contact_4" %}selected{% endif %}>Контакт 4</option>
         </select>
 
-        <!-- Зміна статусу на "Клієнт" при виборі -->
-        
 
         <!-- Сума угоди -->
         <label for="id_deal_amount">Сума угоди:</label>
@@ -86,6 +86,7 @@
             </select>
         </div>
 
+       
         <!-- Кнопки -->
         <button type="submit" class="btn-save">Зберегти</button>
         <a href="{% url 'custom_row_list' table.id %}" class="btn-cancel">Скасувати</a>
@@ -93,24 +94,25 @@
 
     <!-- Скрипт для автоматичної зміни статусу -->
     <script>
-        function updateStatus() {
-            // Отримуємо вибраний контакт для зміни статусу
-            const selectedContact = document.getElementById('id_change_status_contact').value;
+        function updateStatusAutomatically(pk) {
+            // Получаем выбранный контакт для изменения статуса
+            const row = document.querySelector(`[data-pk="${pk}"]`);
+            const selectedContact = row.dataset.changeStatusContact;
+            const contactElement = row.querySelector('#id_contact');
+            const statusElement = row.querySelector('#id_status');
 
-            // Поточний вибраний контакт
-            const currentContact = document.getElementById('id_contact').value;
-
-            // Якщо контакт збігається з вибраним для зміни статусу
-            if (currentContact === selectedContact) {
-                document.getElementById('id_status').value = 'client'; // Змінюємо статус на "Клієнт"
-            } else {
-                document.getElementById('id_status').value = 'lead'; // Повертаємо на "Лід"
+            // Если контакт совпадает с выбранным для изменения статуса и статус "Лид"
+            if (contactElement.value === selectedContact && statusElement.value === 'lead') {
+                statusElement.value = 'client'; // Изменяем статус на "Клиент"
             }
         }
 
-        // Додаємо прослуховувачі до полів
-        document.getElementById('id_contact').addEventListener('change', updateStatus);
-        document.getElementById('id_change_status_contact').addEventListener('change', updateStatus);
+        // Добавляем слушатель события к полю контакта
+        document.querySelectorAll('[data-pk]').forEach(row => {
+            const pk = row.dataset.pk;
+            row.querySelector('#id_contact').addEventListener('change', () => updateStatusAutomatically(pk));
+        });
+
     </script>
 </body>
 </html>

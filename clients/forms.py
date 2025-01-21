@@ -49,6 +49,13 @@ class CustomRowForm(forms.ModelForm):
     """
     Форма для работы со строками таблиц.
     """
+    instagram_username = forms.CharField(
+        label="Нікнейм Instagram",
+        widget=forms.TextInput(attrs={
+            'placeholder': '@username',
+        }),
+        required=False
+    )
     # Поля для выбора валюты
     CURRENCY_CHOICES = [
         ('UAH', 'UAH'),
@@ -71,6 +78,43 @@ class CustomRowForm(forms.ModelForm):
         label="Валюта очікуваного прибутку", 
         required=False
     )
+    change_status_contact = forms.ChoiceField(
+        choices=[
+            ('contact_1', 'Контакт 1'),
+            ('contact_2', 'Контакт 2'),
+            ('contact_3', 'Контакт 3'),
+            ('contact_4', 'Контакт 4'),
+        ],
+        label="Контакт для зміни статусу",
+        required=False
+    )
+
+    country = forms.CharField(
+        label="Країна",
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Введіть країну',
+        }),
+        required=False  # Поле не обязательное
+    )
+    city = forms.CharField(
+        label="Місто",
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Введіть місто',
+        }),
+        required=False  # Поле не обязательное
+    )
+
+    priority = forms.ChoiceField(
+        choices=[
+            ('low', 'Низький'),
+            ('medium', 'Середній'),
+            ('high', 'Високий'),
+        ],
+        label="Пріоритет",
+        required=False
+    )
+
+   
 
     class Meta:
         model = CustomRow
@@ -86,8 +130,10 @@ class CustomRowForm(forms.ModelForm):
         # Метки полей
         labels = {
             'name': "Ім'я клієнта",
+            'instagram_username': "никнейм Instagram",
             'instagram_link': "Посилання Instagram",
             'phone_number': "Номер телефону",
+            'email': "Електрона пошта",
             'manager': "Менеджер",
             'status': "Статус",
             'city': "Місто",
@@ -103,6 +149,7 @@ class CustomRowForm(forms.ModelForm):
             'paid_amount': "Оплачена сума",
             'expected_profit': "Очікуваний прибуток",
             'priority': "Пріоритет",
+            'country': "Країна", 
         }
 
     def __init__(self, *args, **kwargs):
@@ -120,11 +167,22 @@ class CustomRowForm(forms.ModelForm):
         Валидация данных формы.
         """
         cleaned_data = super().clean()
+        instagram_username = cleaned_data.get('instagram_username')
+        phone_number = cleaned_data.get('phone_number')
+
+        # Проверяем, что заполнено хотя бы одно из полей
+        if not instagram_username and not phone_number:
+            raise forms.ValidationError("Потрібно вказати або нікнейм Instagram, або номер телефону.")
+        instagram_username = self.cleaned_data.get('instagram_username')
+        if instagram_username and not instagram_username.startswith('@'):
+            raise forms.ValidationError("Нікнейм Instagram має починатися з символу '@'.")
+       
 
         # Проверяем сумму на отрицательные значения
         deal_amount = cleaned_data.get('deal_amount')
         paid_amount = cleaned_data.get('paid_amount')
         expected_profit = cleaned_data.get('expected_profit')
+
 
         if deal_amount is not None and deal_amount < 0:
             self.add_error('deal_amount', "Сума угоди не може бути від'ємною.")
@@ -133,12 +191,14 @@ class CustomRowForm(forms.ModelForm):
         if expected_profit is not None and expected_profit < 0:
             self.add_error('expected_profit', "Очікуваний прибуток не може бути від'ємним.")
 
-        # Проверка последовательности дат
+        # Проверяем последовательность дат
         record_date = cleaned_data.get('record_date')
         due_date = cleaned_data.get('due_date')
         inquiry_date = cleaned_data.get('inquiry_date')
 
         if not record_date:
-            raise forms.ValidationError("Дата запису є обов'язковою.")
-        
+            self.add_error('record_date', "Дата запису є обов'язковою.")
+        if due_date and record_date and due_date < record_date:
+            self.add_error('due_date', "Дата виконання не може бути раніше дати запису.")
+
         return cleaned_data

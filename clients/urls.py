@@ -21,7 +21,11 @@ urlpatterns = [
     path('tables/<int:table_id>/edit/<int:row_id>/', views.edit_row, name='edit_row'),  # Редактировать строку
     path('tables/<int:table_id>/delete/<int:row_id>/', views.delete_row, name='delete_row'),  # Удалить строку
     path('tables/update-status/<int:row_id>/', views.update_status, name='update_status'),
-    path('update-status1/<int:row_id>/', views.update_status1, name='update_status1'),
-    path('update-contact1/<int:row_id>/', views.update_contact1, name='update_contact1'),
+    path('tables/update-contact1/<int:pk>/', views.update_contact1, name='update_contact1'),
+    path('tables/update-status1/<int:pk>/', views.update_status1, name='update_status1'),
+    path('tables/update-priority/<int:pk>/', views.update_priority, name='update_priority'),
     path('tables/<int:table_id>/', views.table_rows, name='table_rows'),
+    path('tables/custom_row_filter/<int:pk>/', views.custom_row_filter, name='custom_row_filter'),
+    path('tables/reset_filter/<int:pk>/', views.reset_row_filter, name='reset_row_filter'),
+
 ]

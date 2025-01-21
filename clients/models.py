@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.auth.models import User
 class Client(models.Model):
     STATUS_CHOICES = [
         ('lead', 'Лид'),
@@ -34,7 +34,6 @@ class CustomTable(models.Model):
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)  # Дата создания таблицы
     updated_at = models.DateTimeField(auto_now=True)  # Последнее обновление таблицы
-
     def __str__(self):
         return self.name
 
@@ -45,9 +44,13 @@ class CustomRow(models.Model):
 
     # Обязательные поля
     name = models.CharField(max_length=255)  # Имя клиента
+    instagram_username = models.CharField(max_length=40, blank=True, null=True)  # Никнейм Instagram
     instagram_link = models.URLField(blank=True, null=True)  # Ссылка Instagram
     phone_number = models.CharField(max_length=20, blank=True, null=True)  # Номер телефона
+    email = models.EmailField(max_length=255, blank=True, null=True, verbose_name='Електронна пошта')  # Новое поле Email
     manager = models.CharField(max_length=255)  # Менеджер (обязательное)
+    country = models.CharField(max_length=255, blank=True, null=True)  # Поле страны
+    city = models.CharField(max_length=255, blank=True, null=True)  # Поле страны
     status = models.CharField(max_length=50, blank=True, null=True, choices=[
         ('lead', 'Лид'),
         ('client', 'Клиент'),
@@ -76,11 +79,32 @@ class CustomRow(models.Model):
         ('contact_4', 'Контакт 4'),
     ])
 
+    priority = models.CharField(
+        max_length=12,
+        choices=[
+            ('low', 'Низький'),
+            ('medium', 'Середній'),
+            ('high', 'Високий'),
+        ],
+        default='low',  # Значение по умолчанию
+        verbose_name='Пріоритет'
+    )
+
     # Даты
     record_date = models.DateField()  # Дата записи
     due_date = models.DateField(blank=True, null=True)  # Срок выполнения
     inquiry_date = models.DateField(blank=True, null=True)  # Дата обращения
     last_updated = models.DateTimeField(auto_now=True)  # Последнее изменение
+
+    last_updated = models.DateTimeField(auto_now=True)  # Автоматически обновляется при сохранении
+    updated_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='updated_rows', 
+        verbose_name="Змінено користувачем"
+    )
 
     def __str__(self):
         return f"{self.name} - {self.table.name}"
