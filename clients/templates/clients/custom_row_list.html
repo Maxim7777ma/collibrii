@@ -216,14 +216,16 @@
             
                 <td>
                     <a href="{% url 'edit_row' table.id row.id %}" class="btn-edit">Редагувати</a>
-                    <button class="btn-delete" 
-                        onclick="confirmDelete(this)" 
-                        data-table-id="{{ table.id }}" 
-                        data-row-id="{{ row.id }}" 
-                        data-row-number="{{ forloop.counter }}">
-                        Видалити
-                    </button>
+                    {% if row.pk %}
+                    <form method="POST" action="{% url 'delete_row' table.id row.pk %}">
+                        {% csrf_token %}
+                        <button type="button" class="btn-delete" onclick="openDeleteModal({{ row.pk }})">Удалить</button>
+                    </form>
+                    {% else %}
+                    <p>Невозможно удалить строку (идентификатор отсутствует).</p>
+                    {% endif %}
                 </td>
+
             </tr>
             {% empty %}
             <tr>
@@ -234,40 +236,63 @@
     </table>
 
     <!-- Модальне вікно -->
-    <div id="deleteModal" class="modal" style="display: none;">
+    <div class="modal hidden" id="deleteModal">
         <div class="modal-content">
-            <p id="deleteText"></p>
-            <form id="deleteForm" method="POST">
-                {% csrf_token %}
-                <button type="submit" class="btn-delete">Видалити</button>
-                <button type="button" class="btn-cancel" onclick="closeModal()">Скасувати</button>
-            </form>
+            <h3>Подтверждение удаления</h3>
+            <p>Вы уверены, что хотите удалить строку <strong id="rowId"></strong>?</p>
+            <div class="modal-actions">
+                <form method="POST" id="deleteForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-delete">Удалить</button>
+                </form>
+                <button type="button" class="btn btn-cancell" onclick="closeDeleteModal()">Отмена</button>
+            </div>
         </div>
     </div>
+    
+    
+    
 </form>
     <!-- JavaScript для модального вікна та оновлення даних -->
     <script>
-        function confirmDelete(button) {
-            const tableId = button.getAttribute('data-table-id');
-            const rowId = button.getAttribute('data-row-id');
-            const rowNumber = button.getAttribute('data-row-number');
-        
-            document.getElementById('deleteText').innerText = `Ви впевнені, що хочете видалити рядок №${rowNumber}?`;
-            document.getElementById('deleteForm').action = `/clients/tables/${tableId}/delete/${rowId}/`;
-            document.getElementById('deleteModal').style.display = 'block';
+    
+    // Открытие модального окна
+    function confirmDelete(button) {
+        const tableId = button.getAttribute('data-table-id');
+        const pk = button.getAttribute('data-row-pk');
+        const rowNumber = button.getAttribute('data-row-number');
+    
+        if (!pk) {
+            alert('Ошибка: идентификатор строки отсутствует.');
+            return;
         }
+    
+        // Устанавливаем текст подтверждения
+        document.getElementById('deleteText').innerText = `Вы уверены, что хотите удалить строку №${rowNumber}?`;
+    
+        // Обновляем action в форме
+        const deleteForm = document.getElementById('deleteForm');
+        deleteForm.action = `/clients/tables/${tableId}/delete-row/${pk}/`;
+    
+        // Показываем модальное окно
+        const modal = document.getElementById('deleteModal');
+        modal.classList.add('visible');
+        modal.classList.remove('hidden');
+    }
 
-        function closeModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('deleteModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        };
-
+    function openDeleteModal(rowId) {
+        document.getElementById('rowId').innerText = rowId;
+        const deleteForm = document.getElementById('deleteForm');
+        deleteForm.action = `/clients/tables/{{ table.id }}/delete-row/${rowId}/`;
+        document.getElementById('deleteModal').classList.remove('hidden');
+        document.getElementById('deleteModal').classList.add('visible');
+    }
+    
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('visible');
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
+    
     </script>    
     
     <!-- Скрипт для автоматичної зміни статусу -->
@@ -535,7 +560,7 @@
 
    
     </script>
+   
+
 </body>
 </html>
-
-

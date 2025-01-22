@@ -101,9 +101,12 @@ def custom_row_filter(request, pk):
         rows = rows.filter(email__icontains=filters['email'])    
     
 
-    # Поиск дубликатов
-    duplicates = rows.values('instagram_link').annotate(count=Count('instagram_link')).filter(count__gt=1)
-    duplicate_links = [item['instagram_link'] for item in duplicates]
+    
+    duplicate_usernames = rows.values('instagram_username').annotate(count=models.Count('id')).filter(count__gt=1)
+    duplicate_usernames = [item['instagram_username'] for item in duplicate_usernames]
+
+    duplicate_phones = rows.values('phone_number').annotate(count=models.Count('id')).filter(count__gt=1)
+    duplicate_phones = [item['phone_number'] for item in duplicate_phones]
 
     # Уникальные менеджеры
     managers = CustomRow.objects.filter(table=table).values_list('manager', flat=True).distinct()
@@ -111,7 +114,8 @@ def custom_row_filter(request, pk):
     # Передача данных в шаблон
     return render(request, 'clients/custom_row_list.html', {
         'rows': rows,
-        'duplicate_links': duplicate_links,
+        'duplicate_usernames': duplicate_usernames,  # ID строк с дубликатами Instagram
+        'duplicate_phones': duplicate_phones,          # ID строк с дубликатами телефонов
         'filters': filters,
         'managers': managers,
         'table': table,
@@ -298,12 +302,25 @@ def edit_row(request, table_id, row_id):
     }
 
     return render(request, 'clients/custom_row_form.html', {'form': form, 'table': table, 'last_values': last_values})
-
-
 # Функция удаления строки
 def delete_row(request, table_id, row_id):
     table = get_object_or_404(CustomTable, id=table_id)
     row = get_object_or_404(CustomRow, id=row_id, table=table)
+
+    if request.method == "POST":
+        # Удаляем строку
+        row.delete()
+        return redirect('custom_row_list', table_id=table.id)
+
+    # Если запрос не POST, показываем страницу подтверждения
+    return render(request, 'clients/confirm_delete.html', {'row': row, 'table': table})
+
+# Функция удаления строки
+@csrf_exempt 
+def delete_row(request, table_id, pk):
+    # Получаем таблицу и строку по переданным ключам
+    table = get_object_or_404(CustomTable, id=table_id)
+    row = get_object_or_404(CustomRow, pk=pk, table=table)
 
     if request.method == "POST":
         row.delete()
@@ -595,6 +612,3 @@ def main_dashboard(request):
         'clients': clients,
         'customers': customers,
     })
-
-
-

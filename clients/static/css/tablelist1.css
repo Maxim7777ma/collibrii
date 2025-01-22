@@ -309,7 +309,7 @@ select {
     color: white;
 }
 .btn-main:hover {
-    background-color: #7281e4;
+    background-color: #6671bb;
     transform: translateY(-3px) scale(1.05);
 }
 
@@ -324,7 +324,7 @@ select {
 }
 
 .btn-cancel {
-    background-color: #6c757d;
+    background-color: #5487b3;
     color: white;
 }
 
@@ -423,39 +423,146 @@ td {
         color: #7e0000;
     }
 }
-
-/* Модальное окно */
+/* Общие стили для модального окна */
+/* Общий стиль модального окна */
 .modal {
+    display: none;
     position: fixed;
-    top: 0;
+    z-index: 1000;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
+    background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+    backdrop-filter: blur(5px); /* Эффект размытия */
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
 }
 
+.modal.visible {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal.hidden {
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Анимация появления из тумана */
+@keyframes fadeInFromFog {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+        filter: blur(10px);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+/* Контент модального окна */
 .modal-content {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    animation: fadeInModal 0.3s ease-in-out;
+    background: linear-gradient(145deg, #ffffff, #f0f0f0);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    max-width: 400px;
+    animation: fadeInFromFog 0.6s ease;
 }
 
-@keyframes fadeInModal {
-    from {
+/* Заголовок модального окна */
+.modal-content h3 {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+/* Текст подтверждения */
+.modal-content p {
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+/* Блок кнопок */
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Общий стиль кнопок */
+.btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px; /* Одинаковая ширина кнопок */
+}
+
+/* Кнопка удаления */
+.btn-delete {
+    background: linear-gradient(145deg, #ff4c4c, #d43a3a);
+    color: white;
+    box-shadow: 0 5px 15px rgba(255, 76, 76, 0.4);
+}
+
+.btn-delete:hover {
+    background: linear-gradient(145deg, #d43a3a, #ff4c4c);
+    box-shadow: 0 8px 20px rgba(255, 76, 76, 0.6);
+    transform: translateY(-3px);
+}
+
+/* Кнопка отмены */
+.btn-cancell {
+    background: linear-gradient(145deg, #d3d3d3, #b5b5b5);
+    color: black;
+    box-shadow: 0 5px 15px rgba(211, 211, 211, 0.4);
+}
+
+.btn-cancell:hover {
+    background: linear-gradient(145deg, #b5b5b5, #d3d3d3);
+    box-shadow: 0 8px 20px rgba(211, 211, 211, 0.6);
+    transform: translateY(-3px);
+}
+
+/* Кнопки: общий эффект */
+.btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Эффект появления кнопок */
+@keyframes buttonFadeIn {
+    0% {
         opacity: 0;
         transform: scale(0.9);
     }
-    to {
+    100% {
         opacity: 1;
         transform: scale(1);
     }
 }
+
+.modal-actions .btn {
+    animation: buttonFadeIn 0.4s ease both;
+}
+
 
 /* Адаптивность */
 @media (max-width: 768px) {
