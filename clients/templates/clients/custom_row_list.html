@@ -1,566 +1,198 @@
-<!-- filepath: /Users/pk/Desktop/crm_colibri/crm_colibrii/clients/templates/clients/custom_row_list.html -->
 {% load static %}
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ table.name }} - Строки</title>
-    <link rel="stylesheet" href="{% static 'css/tablelist1.css' %}">
+    <title>{{ table.name }} - Список строк</title>
+    <link rel="stylesheet" href="{% static 'css/tablelist.css' %}">
 </head>
-<body id="custom-page">
-    <h1>Таблиця: {{ table.name }}</h1>
-     <!-- Форма фильтрации -->
-    <form method="POST" class="filter-form" action="{% url 'custom_row_filter' pk=table.id %}">
-        {% csrf_token %}
-        <div class="filter-group">
-            <label for="name">Им'я:</label>
-            <input type="text" id="name" name="name" value="{{ filters.name }}">
-        </div>
+<body>
+    <h1>Список строк таблиці: {{ table.name }}</h1>
 
-        <div class="filter-group">
-            <label for="priority">Пріоритет:</label>
-            <select id="priority" name="priority">
-                <option value="">Всі</option>
-                <option value="high" {% if filters.priority == 'high' %}selected{% endif %}>Високий</option>
-                <option value="medium" {% if filters.priority == 'medium' %}selected{% endif %}>Середній</option>
-                <option value="low" {% if filters.priority == 'low' %}selected{% endif %}>Низький</option>
-            </select>
-        </div>
-    
-        <div class="filter-group">
-            <label for="country">Країна:</label>
-            <input type="text" id="country" name="country" value="{{ filters.country }}">
-        </div>
-    
-        <div class="filter-group">
-            <label for="city">Місто:</label>
-            <input type="text" id="city" name="city" value="{{ filters.city }}">
-        </div>
-    
-        <div class="filter-group">
-            <label for="phone_number">Номер телефону:</label>
-            <input type="text" id="phone_number" name="phone_number" value="{{ filters.phone_number }}">
-        </div>
-        <div class="filter-group">
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" value="{{ filters.email }}">
-        </div>
-    
-        <div class="filter-group">
-            <label for="instagram_username">Нікнейм Instagram:</label>
-            <input type="text" id="instagram_username" name="instagram_username" value="{{ filters.instagram_username }}">
-        </div>
+    <!-- Кнопки навигации -->
+    <div class="actions">
+        <a href="{% url 'add_row' table.id %}" class="btn-add">Додати рядок</a>
+        <a href="{% url 'custom_table_list' %}" class="btn-back">Назад до таблиць</a>
+    </div>
 
-        <div class="filter-group">
-            <label for="status">Тип клієнта:</label>
-            <select id="status" name="status">
-                <option value="">Все</option>
-                <option value="lead" {% if filters.status == 'lead' %}selected{% endif %}>Лид</option>
-                <option value="client" {% if filters.status == 'client' %}selected{% endif %}>Клиент</option>
-                <option value="customer" {% if filters.status == 'customer' %}selected{% endif %}>Заказчик</option>
-            </select>
-        </div>
-
-        <div class="filter-group">
-            <label for="manager">Менеджер:</label>
-            <input type="text" id="manager" name="manager" value="{{ filters.manager }}">
-        </div>
-
-        <div class="filter-group">
-            <label for="contact">Статус:</label>
-            <select id="contact" name="contact">
-                <option value="">Все</option>
-                <option value="contact_1" {% if filters.contact == 'contact_1' %}selected{% endif %}>Контакт 1</option>
-                <option value="contact_2" {% if filters.contact == 'contact_2' %}selected{% endif %}>Контакт 2</option>
-                <option value="contact_3" {% if filters.contact == 'contact_3' %}selected{% endif %}>Контакт 3</option>
-                <option value="contact_4" {% if filters.contact == 'contact_4' %}selected{% endif %}>Контакт 4</option>
-            </select>
-        </div>
-
-        <div class="filter-group">
-            <label for="min_deal_amount">Мінімальна сума угода:</label>
-            <input type="number" id="min_deal_amount" name="min_deal_amount" step="0.10" value="{{ filters.min_deal_amount }}">
-        </div>
-
-        <div class="filter-group">
-            <label for="max_deal_amount">Максимальная сума угода:</label>
-            <input type="number" id="max_deal_amount" name="max_deal_amount" step="0.10" value="{{ filters.max_deal_amount }}">
-        </div>
-
-        <div class="filter-group">
-            <label for="start_date">Дата запису (від):</label>
-            <input type="date" id="start_date" name="start_date" value="{{ filters.start_date }}">
-        </div>
-
-        <div class="filter-group">
-            <label for="end_date">Дата запису (до):</label>
-            <input type="date" id="end_date" name="end_date" value="{{ filters.end_date }}">
-        </div>
-
-        <button type="submit" class="btn-filter">Застусувати фільтр</button>
-        <a class="btn-reset" href="{% url 'reset_row_filter' pk=table.id %}">Скинути</a>
-    </form>
-<form method="POST" class="table-form" id="data-form">
-    {% csrf_token %}
-    <h1>Таблиця: {{ table.name }}</h1>
-    
-    <!-- Кнопки навігації -->
-    <a href="{% url 'add_row' table.id %}" class="btn-add">Додати рядок</a>
-    <a href="{% url 'custom_table_list' %}" class="btn-cancel">Назад</a>
-    <a href="{% url 'main_dashboard' %}" class="btn-main">Главная</a>
-
-    <!-- Таблиця рядків -->
+    <!-- Таблица строк -->
     <table>
         <thead>
             <tr>
-                <th>#</th>
-                <th>Ім'я</th>
-                <th>instagram_username</th>
-                <th>Instagram</th>
-                <th>Телефон</th>
-                <th>Email</th>
-                <th>Менеджер</th>
-                <th>Тип</th>
-                <th>Статус</th>
-                <th>Сума угоди</th>
-                <th>Оплачена сума</th>
-                <th>Очікуваний прибуток</th>
-                <th>Дата створення</th>
-                <th>Дата запису</th>
-                <th>Дата виконання</th>
-                <th>Дата звернення</th>
-                <th>Країна</th>
-                <th>Місто</th>
-                <th>Пріоритет</th>
-                <th>Остання зміна</th>
-                <th>Користувач</th>
+                <th>ID</th>
+                {% for field in visible_fields %}
+                    <th>{{ field.label }}</th> <!-- Используем переводы из FIELD_TRANSLATIONS -->
+                {% endfor %}
                 <th>Дії</th>
             </tr>
         </thead>
         <tbody>
-
-    
-
             {% for row in rows %}
-            <tr data-pk="{{ row.id }}" data-change-status-contact="{{ row.change_status_contact }}">
-                <td>{{ forloop.counter }}</td>
-                <td>{{ row.name }}</td>
-                <td>
-                    {% if row.instagram_username %}
-                    <a href="{{ row.instagram_link|default:'#' }}" target="_blank" class="{% if row.instagram_username in duplicate_usernames %}duplicate{% endif %}">
-                        {{ row.instagram_username }}
-                    </a>
-                    {% else %}
-                        Немає даних
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ row.instagram_link }}" target="_blank">
-                        {{ row.instagram_link }}
-                    </a>
-                </td>
-                <td class="{% if row.phone_number in duplicate_phones %}duplicate{% endif %}">{{ row.phone_number }}</td>
-                <td>{{ row.email }}</td>
-                <td>{{ row.manager }}</td>
-                <!-- Статус -->
-                <td>
-                    <select id="status_{{ row.id }}" onchange="updateStatus1(this)">
-                        <option value="lead" {% if row.status == 'lead' %}selected{% endif %}>Лід</option>
-                        <option value="client" {% if row.status == 'client' %}selected{% endif %}>Клієнт</option>
-                        <option value="customer" {% if row.status == 'customer' %}selected{% endif %}>Замовник</option>
-                    </select>
-                </td>
-    
-                <!-- Контакт -->
-                <td>
-                    <select id="id_contact_{{ row.id }}" onchange="updateContact1(this)">
-                        <option value="contact_1" {% if row.contact == 'contact_1' %}selected{% endif %}>Контакт 1</option>
-                        <option value="contact_2" {% if row.contact == 'contact_2' %}selected{% endif %}>Контакт 2</option>
-                        <option value="contact_3" {% if row.contact == 'contact_3' %}selected{% endif %}>Контакт 3</option>
-                        <option value="contact_4" {% if row.contact == 'contact_4' %}selected{% endif %}>Контакт 4</option>
-                    </select>
-                </td>
-    
-                <!-- Суми та валюти -->
-                <td>{{ row.deal_amount }} {{ row.deal_amount_currency }}</td>
-                <td>{{ row.paid_amount }} {{ row.paid_amount_currency }}</td>
-                <td>{{ row.expected_profit }} {{ row.expected_profit_currency }}</td>
-    
-                <!-- Даты -->
-                <td>{{ row.record_date|date:"d F Y" }}</td>
-                <td>{{ row.record_date|date:"d F Y" }}</td>
-                <td>{{ row.due_date|date:"d F Y" }}</td>
-                <td>{{ row.inquiry_date|date:"d F Y" }}</td>
-                <td>{{row.country}}</td>
-                <td>{{row.city}}</td>
-                <td id="priority_cell_{{ row.id }}" class="
-                    {% if row.priority == 'low' %}priority-low{% endif %}
-                    {% if row.priority == 'medium' %}priority-medium{% endif %}
-                    {% if row.priority == 'high' %}priority-high{% endif %}">
-                    <select id="id_priority_{{ row.id }}" onchange="updatePriority(this)">
-                        <option value="low" {% if row.priority == 'low' %}selected{% endif %}>Низький</option>
-                        <option value="medium" {% if row.priority == 'medium' %}selected{% endif %}>Середній</option>
-                        <option value="high" {% if row.priority == 'high' %}selected{% endif %}>Високий</option>
-                    </select>
-                </td>
+            <tr data-row-id="{{ row.id }}">
+                <td>{{ row.id }}</td>
+                {% for field in visible_fields %}
+                    <td class="
+                        {% if field.name == 'phone_number' and row.additional_data|get_item:'phone_number' in duplicate_phones %}duplicate{% endif %}
+                        {% if field.name == 'instagram_username' and row.additional_data|get_item:'instagram_username' in duplicate_usernames %}duplicate{% endif %}
+                    ">
+                        {% if field.name == 'contact' %}
+                            <select class="editable-select contact-select" data-row-id="{{ row.id }}">
+                                <option value="contact_1" {% if row.contact == 'contact_1' %}selected{% endif %}>Контакт 1</option>
+                                <option value="contact_2" {% if row.contact == 'contact_2' %}selected{% endif %}>Контакт 2</option>
+                                <option value="contact_3" {% if row.contact == 'contact_3' %}selected{% endif %}>Контакт 3</option>
+                                <option value="contact_4" {% if row.contact == 'contact_4' %}selected{% endif %}>Контакт 4</option>
+                            </select>
+                        {% elif field.name == 'status' %}
+                            <select class="editable-select status-select" data-row-id="{{ row.id }}">
+                                <option value="lead" {% if row.status == 'lead' %}selected{% endif %}>Лід</option>
+                                <option value="client" {% if row.status == 'client' %}selected{% endif %}>Клієнт</option>
+                                <option value="customer" {% if row.status == 'customer' %}selected{% endif %}>Замовник</option>
+                            </select>
+                        {% elif field.name == 'priority' %}
+                            <select class="editable-select priority-select" data-row-id="{{ row.id }}">
+                                <option value="low" {% if row.priority == 'low' %}selected{% endif %}>Низький</option>
+                                <option value="medium" {% if row.priority == 'medium' %}selected{% endif %}>Середній</option>
+                                <option value="high" {% if row.priority == 'high' %}selected{% endif %}>Високий</option>
+                            </select>
+                        {% elif field.name == 'deal_amount' %}
+                            {{ row.deal_amount }} {{ row.deal_amount_currency }}
+                        {% elif field.name == 'paid_amount' %}
+                            {{ row.paid_amount }} {{ row.paid_amount_currency }}
+                        {% elif field.name == 'expected_profit' %}
+                            {{ row.expected_profit }} {{ row.expected_profit_currency }}
+                        {% elif field.name == 'instagram_username' %}
+                            {% with username=row.additional_data|get_item:'instagram_username' link=row.additional_data|get_item:'instagram_link' %}
+                                {% if username and link %}
+                                    <a href="{{ link }}" target="_blank">{{ username }}</a>
+                                {% else %}
+                                    {{ username|default:"-" }}
+                                {% endif %}
+                            {% endwith %}
 
-                <td>{{ row.last_updated|date:"d M Y H:i" }}</td>
-                <td>
-                    {% if row.updated_by %}
-                        {{ row.updated_by.username }}
-                    {% else %}
-                        Невідомо
-                    {% endif %}
-                </td>
-            
+                        {% elif field.name == 'updated_by' %}
+                            {{ row.updated_by_names|default:"-" }}  <!-- ✅ Просто выводим никнеймы -->
+                            
+
+                        {% elif field.name == 'phone_number' %}
+                            {% with phone=row.additional_data|get_item:'phone_number' %}
+                                {% if phone %}
+                                    <a href="tel:{{ phone }}">{{ phone }}</a>
+                                {% else %}
+                                    {{ phone|default:"-" }}
+                                {% endif %}
+                            {% endwith %}
+
+                        {% else %}
+                            {{ row.additional_data|get_item:field.name|default:"-" }}
+                        {% endif %}
+                    </td>
+                {% endfor %}
                 <td>
                     <a href="{% url 'edit_row' table.id row.id %}" class="btn-edit">Редагувати</a>
-                    {% if row.pk %}
-                    <form method="POST" action="{% url 'delete_row' table.id row.pk %}">
-                        {% csrf_token %}
-                        <button type="button" class="btn-delete" onclick="openDeleteModal({{ row.pk }})">Удалить</button>
-                    </form>
-                    {% else %}
-                    <p>Невозможно удалить строку (идентификатор отсутствует).</p>
-                    {% endif %}
+                    <button class="btn-delete" data-row-id="{{ row.id }}">Видалити</button>
                 </td>
-
             </tr>
             {% empty %}
             <tr>
-                <td colspan="15">Немає даних</td>
+                <td colspan="{{ visible_fields|length|add:'1' }}">Дані відсутні</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <!-- Модальне вікно -->
-    <div class="modal hidden" id="deleteModal">
-        <div class="modal-content">
-            <h3>Подтверждение удаления</h3>
-            <p>Вы уверены, что хотите удалить строку <strong id="rowId"></strong>?</p>
-            <div class="modal-actions">
-                <form method="POST" id="deleteForm">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-delete">Удалить</button>
-                </form>
-                <button type="button" class="btn btn-cancell" onclick="closeDeleteModal()">Отмена</button>
-            </div>
-        </div>
-    </div>
-    
-    
-    
-</form>
-    <!-- JavaScript для модального вікна та оновлення даних -->
+    <!-- JavaScript -->
     <script>
-    
-    // Открытие модального окна
-    function confirmDelete(button) {
-        const tableId = button.getAttribute('data-table-id');
-        const pk = button.getAttribute('data-row-pk');
-        const rowNumber = button.getAttribute('data-row-number');
-    
-        if (!pk) {
-            alert('Ошибка: идентификатор строки отсутствует.');
-            return;
-        }
-    
-        // Устанавливаем текст подтверждения
-        document.getElementById('deleteText').innerText = `Вы уверены, что хотите удалить строку №${rowNumber}?`;
-    
-        // Обновляем action в форме
-        const deleteForm = document.getElementById('deleteForm');
-        deleteForm.action = `/clients/tables/${tableId}/delete-row/${pk}/`;
-    
-        // Показываем модальное окно
-        const modal = document.getElementById('deleteModal');
-        modal.classList.add('visible');
-        modal.classList.remove('hidden');
-    }
-
-    function openDeleteModal(rowId) {
-        document.getElementById('rowId').innerText = rowId;
-        const deleteForm = document.getElementById('deleteForm');
-        deleteForm.action = `/clients/tables/{{ table.id }}/delete-row/${rowId}/`;
-        document.getElementById('deleteModal').classList.remove('hidden');
-        document.getElementById('deleteModal').classList.add('visible');
-    }
-    
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.remove('visible');
-        document.getElementById('deleteModal').classList.add('hidden');
-    }
-    
-    </script>    
-    
-    <!-- Скрипт для автоматичної зміни статусу -->
- 
-    <script>
-    let debounceTimer;
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+        // Получение CSRF-токена
+        function getCSRFToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    return cookie.substring('csrftoken='.length);
                 }
             }
-            return cookieValue;
+            return '';
         }
 
+        // Обновление контакта
+        document.querySelectorAll('.contact-select').forEach(select => {
+            select.addEventListener('change', function () {
+                const rowId = this.dataset.rowId;
+                const contactValue = this.value;
 
-        function updatePriority(selectElement) {
-            const row = selectElement.closest('tr'); // Получаем строку
-            const td = selectElement.closest('td'); // Находим <td>, содержащую <select>
-            const pk = row.dataset.pk; // Получаем pk строки
-            const priorityValue = selectElement.value; // Получаем выбранное значение
-        
-            // Устанавливаем класс для td в зависимости от значения
-            td.classList.remove('priority-low', 'priority-medium', 'priority-high');
-            if (priorityValue === 'low') {
-                td.classList.add('priority-low');
-            } else if (priorityValue === 'medium') {
-                td.classList.add('priority-medium');
-            } else if (priorityValue === 'high') {
-                td.classList.add('priority-high');
-            }
-        
-            // Отправляем обновления на сервер
-            const url = `/clients/tables/update-priority/${pk}/`;
-            const data = { priority: priorityValue };
-        
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'), // Убедись, что функция getCookie определена
-                },
-                body: JSON.stringify(data),
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        alert('Пріоритет успішно оновлено!');
-                    } else {
-                        alert('Помилка при оновленні пріоритету.');
-                    }
-                })
-                .catch((error) => {
-                    console.error('Помилка мережі:', error);
-                    alert('Помилка мережі.');
-                });
-        }
-
-        function updateContact1(selectElement) {
-            const row = selectElement.closest('tr'); // Находим строку, содержащую select
-            const pk = row.dataset.pk; // Получаем pk строки
-            const contactValue = selectElement.value; // Получаем выбранное значение
-        
-            const url = `/clients/tables/update-contact1/${pk}/`; // Формируем URL
-            const data = { contact: contactValue };
-        
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'), // Убедитесь, что функция getCookie определена
-                },
-                body: JSON.stringify(data)
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.success) {
-                      alert('Контакт оновлено!');
-                      updateStatusAutomatically(pk, contactValue);
-                      location.reload(); // Обновляем страницу
-                  } else if (data.warning) {
-                      alert(data.warning);
-                  } else {
-                      alert('Помилка при оновленні контакту!');
-                  }
-              }).catch(error => {
-                  alert('Ошибка сети: ' + error.message);
-              });
-        }
-
-        function updateStatus1(selectElement) {
-            const row = selectElement.closest('tr'); // Находим строку, содержащую select
-            const pk = row.dataset.pk; // Получаем pk строки
-            const statusValue = selectElement.value; // Получаем выбранное значение
-        
-            const url = `/clients/tables/update-status1/${pk}/`; // Формируем URL
-            const data = { status: statusValue };
-        
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'), // Убедитесь, что функция getCookie определена
-                },
-                body: JSON.stringify(data)
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.success) {
-                      alert('Статус оновлено!');
-                      location.reload(); // Обновляем страницу
-                  } else {
-                      alert('Помилка при оновленні статусу!');
-                  }
-              }).catch(error => {
-                  alert('Ошибка сети: ' + error.message);
-              });
-        }
-
-        function updateStatusAutomatically(pk, contactValue) {
-            const row = document.querySelector(`[data-pk="${pk}"]`);
-            const selectedContact = row.dataset.changeStatusContact; // Контакт, при котором статус меняется на "Клиент"
-            const statusElement = row.querySelector(`select[id^="status_"]`);
-        
-            // Проверяем, что contactValue и selectedContact совпадают
-            if (contactValue === selectedContact && statusElement.value === 'lead') {
-                statusElement.value = 'client'; // Изменяем статус на "Клиент"
-        
-                // Отправляем обновленный статус на сервер
-                const url = `/clients/tables/update-status1/${pk}/`;
-                const data = { status: statusElement.value };
-        
-                fetch(url, {
+                fetch(`/clients/tables/update-contact/${rowId}/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-CSRFToken': getCSRFToken()
                     },
-                    body: JSON.stringify(data)
-                }).then(response => response.json())
-                  .then(data => {
-                      if (data.success) {
-                          alert('Статус оновлено автоматично!');
-                          location.reload(); // Обновляем страницу
-                      } else {
-                          alert('Помилка при автоматичному оновленні статусу!');
-                      }
-                  }).catch(error => {
-                      alert('Ошибка сети: ' + error.message);
-                  });
-            }
-        }
-        // Функция для отправки фильтров на сервер
-        function applyFilters() {
-            const form = document.querySelector('.filter-form');
-            if (!form) return;
-        
-            const formData = new FormData(form);
-            const params = new URLSearchParams(formData);
-        
-            fetch(form.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'X-Requested-With': 'XMLHttpRequest', // Указываем, что это AJAX-запрос
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: params.toString(),
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP Error: ${response.status}`);
-                    }
-                    return response.json(); // Ожидаем JSON
+                    body: JSON.stringify({ contact: contactValue })
                 })
+                .then(response => response.json())
                 .then(data => {
-                    updateTable(data.rows); // Обновляем таблицу
+                    if (data.success) {
+                        alert('Контакт обновлен!');
+                        if (data.auto_status_change) {
+                            document.querySelector(`.status-select[data-row-id="${rowId}"]`).value = 'client';
+                        }
+                    } else {
+                        alert('Ошибка обновления контакта.');
+                    }
                 })
-                .catch(error => console.error('Ошибка фильтрации:', error));
-        }
-        
-
-    // Функция для обновления таблицы на странице
-    function updateTable(rows) {
-        const tableBody = document.querySelector('tbody');
-        tableBody.innerHTML = ''; // Очищаем старые строки
-
-        if (rows.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="9">Нет данных</td></tr>';
-            return;
-        }
-
-        rows.forEach((row, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${row.name}</td>
-                <td><a href="${row.instagram_link}" target="_blank">${row.instagram_link || '—'}</a></td>
-                <td>${row.phone_number || '—'}</td>
-                <td>${row.manager || '—'}</td>
-                <td>${row.status || '—'}</td>
-                <td>${row.contact || '—'}</td>
-                <td>${row.deal_amount || '—'}</td>
-                <td>${row.record_date || '—'}</td>
-            `;
-            tableBody.appendChild(tr);
+                .catch(error => console.error('Ошибка сети:', error));
+            });
         });
-    }
 
-    // Дебаунсинг для предотвращения лишних запросов
-    
-    function debounce(callback, delay = 500) {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(callback, delay);
-    }
+        // Обновление статуса
+        document.querySelectorAll('.status-select').forEach(select => {
+            select.addEventListener('change', function () {
+                const rowId = this.dataset.rowId;
+                const statusValue = this.value;
 
-    // Событие для изменения фильтров
-    document.querySelectorAll('.filter-form input, .filter-form select').forEach(input => {
-        input.addEventListener('input', () => debounce(applyFilters, 500));
-    });
-
-   
-    document.addEventListener('DOMContentLoaded', function () {
-        const filterForm = document.querySelector('.filter-form'); // Форма фильтрации
-        const resetButton = document.querySelector('.btn-reset'); // Кнопка сброса
-    
-        if (filterForm && resetButton) {
-            resetButton.addEventListener('click', function () {
-                // Сбрасываем все поля формы
-                filterForm.reset();
-    
-                // Устанавливаем значения пустыми
-                const formData = new FormData(filterForm);
-                for (const key of formData.keys()) {
-                    formData.set(key, '');
-                }
-    
-                // Отправляем запрос на сервер
-                fetch(filterForm.action, {
+                fetch(`/clients/tables/update-status/${rowId}/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
                     },
-                    body: new URLSearchParams(formData).toString(),
+                    body: JSON.stringify({ status: statusValue })
                 })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP Error: ${response.status}`);
-                        }
-                        return response.json(); // Ожидаем JSON
-                    })
-                    .then(data => updateTable(data.rows)) // Обновляем таблицу
-                    .catch(error => console.error('Ошибка сброса фильтров:', error));
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Статус обновлен!');
+                    } else {
+                        alert('Ошибка обновления статуса.');
+                    }
+                })
+                .catch(error => console.error('Ошибка сети:', error));
             });
-        } else {
-            console.error('Форма фильтрации или кнопка сброса не найдены.');
-        }
-    });
+        });
 
-   
+        // Удаление строки
+        document.querySelectorAll('.btn-delete').forEach(button => {
+            button.addEventListener('click', function () {
+                const rowId = this.dataset.rowId;
+                if (confirm(`Вы уверены, что хотите удалить строку с ID ${rowId}?`)) {
+                    fetch(`/clients/tables/{{ table.id }}/delete-row/${rowId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCSRFToken()
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            document.querySelector(`tr[data-row-id="${rowId}"]`).remove();
+                        } else {
+                            alert('Ошибка удаления строки.');
+                        }
+                    })
+                    .catch(error => console.error('Ошибка сети:', error));
+                }
+            });
+        });
     </script>
-   
-
 </body>
 </html>

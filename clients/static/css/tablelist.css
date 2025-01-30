@@ -105,32 +105,41 @@ tr:hover {
     background-color: #e6f7ff;
     cursor: pointer;
 }
-
-/* Подсветка дубликатов */
-tr.duplicate {
-    background-color: #ffebee;
-    animation: highlight 0.5s ease-in-out;
+.duplicate {
+    animation: colorBlink 1.5s infinite; /* Анимация цвета */
+    text-decoration: none; /* Убираем подчеркивание */
+    font-weight: bold; /* Можно сделать текст жирным */
 }
 
-/* Анимации */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes highlight {
+/* Анимация смены цвета */
+@keyframes colorBlink {
     0% {
-        background-color: #ffebee;
+        color: #c4142e; /* Красный */
+    }
+    25% {
+        color: #ffa500; /* Оранжевый */
+    }
+    50% {
+        color: #008000; /* Зеленый */
+    }
+    75% {
+        color: #0000ff; /* Синий */
     }
     100% {
-        background-color: #ffe6e6;
+        color: #800080; /* Фиолетовый */
     }
+}
+
+/* Стили для ссылок внутри дубликатов */
+.duplicate a {
+    animation: colorBlink 1.5s infinite; /* То же самое для ссылок */
+    text-decoration: none; /* Убираем подчеркивание */
+    font-weight: bold;
+}
+
+/* Дополнительно: ховер-эффект для ссылок */
+.duplicate a:hover {
+    text-decoration: underline; /* Подчеркивание при наведении */
 }
 
 /* Адаптивность */

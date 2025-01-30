@@ -3,116 +3,89 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Додати рядок до таблиці - {{ table.name }}</title>
+    <title>{{ table.name }} - Добавить строку</title>
     <link rel="stylesheet" href="{% static 'css/tableform.css' %}">
+   
 </head>
 <body>
-    <h1>Додати рядок до таблиці: {{ table.name }}</h1>
+    <h1>Добавить строку в таблицу: {{ table.name }}</h1>
 
-    <!-- Форма додавання рядка -->
-    <form method="POST" class="table-form" id="data-form" data-pk="{{ form.instance.pk }}" data-change-status-contact="{{ form.instance.change_status_contact }}">
+    <!-- Форма добавления строки -->
+    <form method="POST" class="table-form">
         {% csrf_token %}
         
-        <!-- Відображення помилок -->
+        <!-- Отображение ошибок -->
         {% if form.errors %}
             <div class="error-messages">
                 <ul>
                     {% for field in form %}
-                        {% for error in field.errors %}
-                            <li>{{ field.label }}: {{ error }}</li>
-                        {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <li>{{ error }}</li>
+                        {% if field.errors %}
+                            <li>{{ field.label }}: {{ field.errors|join:", " }}</li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
             </div>
         {% endif %}
 
-        <!-- Виведення автоматичних полів -->
+        <!-- Отображение полей формы -->
         {% for field in form %}
-            {% if field.name not in "deal_amount,deal_amount_currency,paid_amount,paid_amount_currency,expected_profit,expected_profit_currency,contact" %}
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
+            {% if field.name != "manually_updated" and field.name != "updated_by" %}
+                <p>
+                    {{ field.label_tag }}
+                    {{ field }}
+                </p>
             {% endif %}
         {% endfor %}
+         <!-- Поле manually_updated -->
+    <div class="field-manually_updated">
+        {{ form.manually_updated.label_tag }}
+        {{ form.manually_updated }}
+    </div>
 
-        
-            
-        <!-- Контакт -->
-        <label for="id_contact">Контакт:</label>
-        <select id="id_contact" name="contact" value="contact">
-            <option value="contact_1" {% if form.initial.contact == "contact_1" %}selected{% endif %}>Контакт 1</option>
-            <option value="contact_2" {% if form.initial.contact == "contact_2" %}selected{% endif %}>Контакт 2</option>
-            <option value="contact_3" {% if form.initial.contact == "contact_3" %}selected{% endif %}>Контакт 3</option>
-            <option value="contact_4" {% if form.initial.contact == "contact_4" %}selected{% endif %}>Контакт 4</option>
-        </select>
-
-
-        <!-- Сума угоди -->
-        <label for="id_deal_amount">Сума угоди:</label>
-        <div class="input-group">
-            <input type="number" id="id_deal_amount" name="deal_amount" 
-                   value="{{ last_values.deal_amount|floatformat }}" step="0.01" placeholder="{{ last_values.deal_amount|floatformat }}">
-            <select id="id_deal_amount_currency" name="deal_amount_currency">
-                <option value="UAH" {% if last_values.deal_amount_currency == "UAH" %}selected{% endif %}>UAH</option>
-                <option value="USD" {% if last_values.deal_amount_currency == "USD" %}selected{% endif %}>USD</option>
-                <option value="EUR" {% if last_values.deal_amount_currency == "EUR" %}selected{% endif %}>EUR</option>
-            </select>
-        </div>
-
-        <!-- Оплачена сума -->
-        <label for="id_paid_amount">Оплачена сума:</label>
-        <div class="input-group">
-            <input type="number" id="id_paid_amount" name="paid_amount" 
-                   value="{{ last_values.paid_amount|floatformat }}" step="0.01" placeholder="{{ last_values.paid_amount|floatformat }}">
-            <select id="id_paid_amount_currency" name="paid_amount_currency">
-                <option value="UAH" {% if last_values.paid_amount_currency == "UAH" %}selected{% endif %}>UAH</option>
-                <option value="USD" {% if last_values.paid_amount_currency == "USD" %}selected{% endif %}>USD</option>
-                <option value="EUR" {% if last_values.paid_amount_currency == "EUR" %}selected{% endif %}>EUR</option>
-            </select>
-        </div>
-
-        <!-- Очікуваний прибуток -->
-        <label for="id_expected_profit">Очікуваний прибуток:</label>
-        <div class="input-group">
-            <input type="number" id="id_expected_profit" name="expected_profit" 
-                   value="{{ last_values.expected_profit|floatformat }}" step="0.01" placeholder="{{ last_values.expected_profit|floatformat }}">
-            <select id="id_expected_profit_currency" name="expected_profit_currency">
-                <option value="UAH" {% if last_values.expected_profit_currency == "UAH" %}selected{% endif %}>UAH</option>
-                <option value="USD" {% if last_values.expected_profit_currency == "USD" %}selected{% endif %}>USD</option>
-                <option value="EUR" {% if last_values.expected_profit_currency == "EUR" %}selected{% endif %}>EUR</option>
-            </select>
-        </div>
+    <!-- Поле updated_by (скрыто по умолчанию) -->
+    <div class="field-updated_by" style="display: none;">
+        {{ form.updated_by.label_tag }}
+        {{ form.updated_by }}
+    </div>
 
        
         <!-- Кнопки -->
-        <button type="submit" class="btn-save">Зберегти</button>
-        <a href="{% url 'custom_row_list' table.id %}" class="btn-cancel">Скасувати</a>
+        <button type="submit" class="btn-save">Сохранить</button>
+        <a href="{% url 'custom_row_list' table.id %}" class="btn-cancel">Отмена</a>
     </form>
 
-    <!-- Скрипт для автоматичної зміни статусу -->
+    <!-- Скрипт для динамических изменений (опционально, если нужно) -->
     <script>
-        function updateStatusAutomatically(pk) {
-            // Получаем выбранный контакт для изменения статуса
-            const row = document.querySelector(`[data-pk="${pk}"]`);
-            const selectedContact = row.dataset.changeStatusContact;
-            const contactElement = row.querySelector('#id_contact');
-            const statusElement = row.querySelector('#id_status');
-
-            // Если контакт совпадает с выбранным для изменения статуса и статус "Лид"
-            if (contactElement.value === selectedContact && statusElement.value === 'lead') {
-                statusElement.value = 'client'; // Изменяем статус на "Клиент"
-            }
-        }
-
-        // Добавляем слушатель события к полю контакта
+        // Если требуется дополнительная логика (например, автоматическое изменение статуса)
         document.querySelectorAll('[data-pk]').forEach(row => {
             const pk = row.dataset.pk;
-            row.querySelector('#id_contact').addEventListener('change', () => updateStatusAutomatically(pk));
+            row.querySelector('#id_contact').addEventListener('change', () => {
+                // Логика обработки изменений (дополнительно, если требуется)
+            });
         });
-
     </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const manualCheckbox = document.getElementById('id_manually_updated');
+            const updatedByField = document.querySelector('.field-updated_by');
+        
+            function toggleUpdatedBy() {
+                if (manualCheckbox.checked) {
+                    updatedByField.style.display = 'block';
+                    updatedByField.querySelector('select').disabled = false;
+                } else {
+                    updatedByField.style.display = 'none';
+                    updatedByField.querySelector('select').disabled = true;
+                }
+            }
+        
+            if (manualCheckbox && updatedByField) {
+                manualCheckbox.addEventListener('change', toggleUpdatedBy);
+                toggleUpdatedBy(); // Инициализация при загрузке
+            }
+        });
+    </script>
+       
+    
 </body>
 </html>

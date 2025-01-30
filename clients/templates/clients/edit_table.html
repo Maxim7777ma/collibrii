@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Создать таблицу</title>
+    <title>Редактировать таблицу</title>
     <link rel="stylesheet" href="{% static 'css/create_table.css' %}">
 </head>
 <body>
-    <h1>Создать новую таблицу</h1>
+    <h1>Редактировать таблицу</h1>
     <form method="POST" class="table-form">
         {% csrf_token %}
         <label for="id_name">Название таблицы:</label>
@@ -21,6 +21,7 @@
         <div class="field-selection">
             {{ form.visible_fields }}
         </div>
+
         <h3>Укажите группу, которая будет иметь доступ к этой таблице:</h3>
         <div>
             <label for="id_group">Группа:</label>
@@ -32,3 +33,4 @@
     </form>
 </body>
 </html>
+

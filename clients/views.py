@@ -16,13 +16,13 @@ from .models import CustomTable, CustomRow
 from .forms import CustomRowForm
 from .forms import CustomTableForm
 from django.db.models import Q
-
-
+from django.core.exceptions import PermissionDenied
+from .forms import FIELD_TRANSLATIONS
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Count
 from django.contrib.auth.decorators import login_required
 from .models import Client, CustomTable
-
+from django.contrib.auth.models import User
 
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Count
@@ -31,6 +31,86 @@ from .models import CustomRow, CustomTable
 from datetime import datetime
 
 from django.shortcuts import redirect
+from django.contrib import messages
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import CustomTable
+from .forms import CustomTableForm
+import json
+
+
+
+def get_updated_by_usernames(self):
+    """
+    Преобразует ID пользователей из JSON в список usernames.
+    """
+    if not self.additional_data:
+        return []
+
+    try:
+        data = json.loads(self.additional_data)
+        user_ids = data.get('updated_by', [])
+
+        # Если данные были сохранены как строка, конвертируем в int
+        if isinstance(user_ids, str):
+            user_ids = [int(user_ids)]
+        elif isinstance(user_ids, list):
+            user_ids = [int(uid) for uid in user_ids]
+
+        # Получаем пользователей по ID и возвращаем их usernames
+        return list(User.objects.filter(id__in=user_ids).values_list('username', flat=True))
+
+    except (json.JSONDecodeError, ValueError):
+        return []
+
+def edit_table(request, table_id):
+    """
+    Редактирование таблицы.
+    """
+    table = get_object_or_404(CustomTable, id=table_id)
+
+    if request.method == "POST":
+        form = CustomTableForm(request.POST, instance=table)
+        if form.is_valid():
+            # Обновляем поля таблицы
+            table = form.save(commit=False)
+            # Преобразуем видимые поля в формат списка словарей с ключом "name"
+            table.visible_fields = [
+                {"name": field} if isinstance(field, str) else field
+                for field in form.cleaned_data.get('visible_fields', [])
+            ]
+            table.save()
+            messages.success(request, "Таблиця успішно відредагована.")
+            return redirect('custom_table_list')
+    else:
+        # Декодируем `visible_fields` из JSON (если необходимо)
+        visible_fields = table.visible_fields
+        if isinstance(visible_fields, str):
+            try:
+                visible_fields = json.loads(visible_fields)
+            except json.JSONDecodeError:
+                visible_fields = []
+
+        # Преобразуем данные в список строк для инициализации формы
+        initial_visible_fields = [field["name"] for field in visible_fields if isinstance(field, dict)]
+        form = CustomTableForm(instance=table, initial={"visible_fields": initial_visible_fields})
+
+    return render(request, 'clients/edit_table.html', {'form': form, 'table': table})
+
+def delete_table(request, table_id):
+    """
+    Удаление таблицы.
+    """
+    table = get_object_or_404(CustomTable, id=table_id)
+
+    if request.method == "POST":
+        table.delete()
+        messages.success(request, "Таблицу успешно удалено.")
+        return redirect('custom_table_list')
+
+    return redirect('custom_table_list')
+
 
 @login_required
 def reset_row_filter(request, pk):
@@ -248,60 +328,69 @@ def table_rows(request, table_id):
     })
 
 # Функция редактирования строки
+@login_required
 def edit_row(request, table_id, row_id):
-    if not request.user.is_authenticated:
-        return redirect('login')  # Перенаправление на страницу входа
-
+    """
+    Функция для редактирования строки таблицы с учётом динамических полей.
+    """
+    # Получаем таблицу и строку по ID
     table = get_object_or_404(CustomTable, id=table_id)
     row = get_object_or_404(CustomRow, id=row_id, table=table)
 
     if request.method == "POST":
-        form = CustomRowForm(request.POST, instance=row)
+        if not request.user.is_authenticated:
+            raise PermissionDenied("Вы должны быть авторизованы для выполнения этого действия.")
+        
+        # Передаём таблицу в форму для обработки динамических полей
+        form = CustomRowForm(request.POST, table=table, instance=row, user=request.user)
         if form.is_valid():
-            row = form.save(commit=False)# Устанавливаем текущего пользователя
-            row.updated_by = request.user 
-            if form.cleaned_data['deal_amount'] is not None:
-                row.deal_amount = form.cleaned_data['deal_amount']
-            if form.cleaned_data['deal_amount_currency']:
-                row.deal_amount_currency = form.cleaned_data['deal_amount_currency']
-
-            if form.cleaned_data['paid_amount'] is not None:
-                row.paid_amount = form.cleaned_data['paid_amount']
-            if form.cleaned_data['paid_amount_currency']:
-                row.paid_amount_currency = form.cleaned_data['paid_amount_currency']
-
-            if form.cleaned_data['expected_profit'] is not None:
-                row.expected_profit = form.cleaned_data['expected_profit']
-            if form.cleaned_data['expected_profit_currency']:
-                row.expected_profit_currency = form.cleaned_data['expected_profit_currency']
-            row.contact = form.cleaned_data['contact']
-            row.change_status_contact = form.cleaned_data['change_status_contact']
-            row.save()
+            row = form.save(commit=False, user=request.user) # Сохраняем объект без коммита
+            row.save()  # Сохраняем строку в базе данных
             return redirect('custom_row_list', table_id=table.id)
+        else:
+            # Логирование ошибок для диагностики
+            print("Ошибки формы:", form.errors)
+            print("Form errors:", form.errors)
     else:
-        initial_data = {
-            'deal_amount': row.deal_amount if row.deal_amount else '',
-            'deal_amount_currency': row.deal_amount_currency if row.deal_amount_currency else 'UAH',
-            'paid_amount': row.paid_amount if row.paid_amount else '',
-            'paid_amount_currency': row.paid_amount_currency if row.paid_amount_currency else 'UAH',
-            'expected_profit': row.expected_profit if row.expected_profit else '',
-            'expected_profit_currency': row.expected_profit_currency if row.expected_profit_currency else 'UAH',
-            'contact': row.contact,
-            'change_status_contact': row.change_status_contact,  # Предполагаем, что это поле должно быть заполнено текущим контактом
-        }
-        form = CustomRowForm(instance=row, initial=initial_data)
+        # Передаём текущую строку и таблицу в форму
+        form = CustomRowForm(table=table, instance=row, user=request.user)
 
-    last_values = {
-        'deal_amount': row.deal_amount,
-        'deal_amount_currency': row.deal_amount_currency,
-        'paid_amount': row.paid_amount,
-        'paid_amount_currency': row.paid_amount_currency,
-        'expected_profit': row.expected_profit,
-        'expected_profit_currency': row.expected_profit_currency,
-        'change_status_contact': row.change_status_contact, 
-    }
+    return render(
+        request, 
+        'clients/custom_row_form.html', 
+        {'form': form, 'table': table, 'row': row}
+    )
+def create_table(request):
+    """
+    Представление для создания новой таблицы.
+    """
+    # Поля, которые нужно исключить
+    exclude_fields = ['deal_amount_currency', 'paid_amount_currency', 'expected_profit_currency']
 
-    return render(request, 'clients/custom_row_form.html', {'form': form, 'table': table, 'last_values': last_values})
+    if request.method == "POST":
+        # Инициализация формы с POST-данными
+        form = CustomTableForm(request.POST)
+        if form.is_valid():
+            table = form.save(commit=False)
+
+            # Получаем видимые поля из формы
+            visible_fields = form.cleaned_data['visible_fields']
+
+            # Исключаем ненужные поля (например, связанные с валютами)
+            filtered_fields = [
+                {"name": field} for field in visible_fields if field not in exclude_fields
+            ]
+
+            # Сохраняем видимые поля в JSON-формате
+            table.visible_fields = json.dumps(filtered_fields)
+            table.save()
+
+            return redirect('custom_table_list')  # Перенаправляем на список таблиц
+    else:
+        # Инициализация формы
+        form = CustomTableForm()
+
+    return render(request, 'clients/create_table.html', {'form': form})
 # Функция удаления строки
 def delete_row(request, table_id, row_id):
     table = get_object_or_404(CustomTable, id=table_id)
@@ -328,25 +417,97 @@ def delete_row(request, table_id, pk):
 
     return render(request, 'clients/confirm_delete.html', {'row': row, 'table': table})
 
-# === Список строк в таблице ===
+from collections import Counter
+
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Count
+from .models import CustomTable, CustomRow
+import json
+
 def custom_row_list(request, table_id):
+    """
+    Отображение строк таблицы.
+    """
+    # Получаем таблицу
     table = get_object_or_404(CustomTable, id=table_id)
+
+    # Загружаем видимые поля
+    visible_fields = table.visible_fields or []
+    
+    # Если visible_fields сохранены как JSON, декодируем их
+    if isinstance(visible_fields, str):
+        try:
+            visible_fields = json.loads(visible_fields)
+        except json.JSONDecodeError:
+            visible_fields = []  # Если данные некорректны, задаем пустой список
+
+    # Загружаем строки таблицы
     rows = CustomRow.objects.filter(table=table)
 
-    # Поиск дубликатов по Instagram и телефону
-    duplicate_usernames = rows.values('instagram_username').annotate(count=models.Count('id')).filter(count__gt=1)
-    duplicate_usernames = [item['instagram_username'] for item in duplicate_usernames]
+    # Декодируем additional_data для каждой строки
+    for row in rows:
+        if isinstance(row.additional_data, str):
+            try:
+                row.additional_data = json.loads(row.additional_data)
+            except json.JSONDecodeError:
+                row.additional_data = {}
 
-    duplicate_phones = rows.values('phone_number').annotate(count=models.Count('id')).filter(count__gt=1)
-    duplicate_phones = [item['phone_number'] for item in duplicate_phones]
+    # Поиск дубликатов
+    # Поиск дубликатов ТОЛЬКО в пределах текущей таблицы
+    # Собираем все значения `instagram_username` и `phone_number` из additional_data
+    instagram_usernames = []
+    phone_numbers = []
+
+    for row in rows:
+        instagram_usernames.append(row.additional_data.get('instagram_username'))
+        phone_numbers.append(row.additional_data.get('phone_number'))
+
+    # Убираем пустые значения и считаем дубликаты
+    duplicate_usernames = [key for key, count in Counter(filter(None, instagram_usernames)).items() if count > 1]
+    duplicate_phones = [key for key, count in Counter(filter(None, phone_numbers)).items() if count > 1]
+
+    if isinstance(table.visible_fields, str):
+        try:
+            table.visible_fields = json.loads(table.visible_fields)
+        except json.JSONDecodeError:
+            table.visible_fields = []
+
+    visible_fields = [
+        {"name": field["name"], "label": FIELD_TRANSLATIONS.get(field["name"], field["name"])}
+        for field in table.visible_fields
+    ]    
+
+    # Обрабатываем additional_data для каждой строки
+    for row in rows:
+        if isinstance(row.additional_data, str):
+            try:
+                additional_data = json.loads(row.additional_data)
+            except json.JSONDecodeError:
+                additional_data = {}
+        else:
+            additional_data = row.additional_data or {}
+
+        # Получаем список ID пользователей из additional_data
+        updated_by_ids = additional_data.get("updated_by", [])
+
+        if isinstance(updated_by_ids, str):  # Если ID записаны как строка (например, "['1', '2']")
+            updated_by_ids = updated_by_ids.strip("[]").replace("'", "").split(", ")
+
+        updated_by_ids = [int(uid) for uid in updated_by_ids if str(uid).isdigit()]
+
+        # Находим пользователей по ID и преобразуем в список никнеймов
+        users = User.objects.filter(id__in=updated_by_ids).values_list("username", flat=True)
+        row.updated_by_names = ", ".join(users) if users else "-"
+    
 
     return render(request, 'clients/custom_row_list.html', {
         'table': table,
         'rows': rows,
-        'duplicate_usernames': duplicate_usernames,
-        'duplicate_phones': duplicate_phones,
+        'visible_fields': visible_fields,  # Передаем список видимых полей
+        'duplicate_usernames': list(duplicate_usernames),
+        'duplicate_phones': list(duplicate_phones),
+        'field_translations': FIELD_TRANSLATIONS, 
     })
-
 
 
 # === Создание новой таблицы ===
@@ -354,12 +515,15 @@ def custom_table_create(request):
     if request.method == "POST":
         form = CustomTableForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('custom_table_list')  # Перенаправление на список таблиц
+            table = form.save(commit=False)
+
+            # Сохраняем видимые поля в виде JSON
+            table.visible_fields = [{"name": field} for field in form.cleaned_data['visible_fields']]
+            table.save()
+            return redirect('custom_table_list')
     else:
         form = CustomTableForm()
-    return render(request, 'clients/create_table.html', {'form': form})  # Исправлен путь к шаблону
-
+    return render(request, 'clients/create_table.html', {'form': form})
 
 # === Список всех таблиц ===
 def custom_table_list(request):
@@ -367,47 +531,38 @@ def custom_table_list(request):
     return render(request, 'clients/table_list.html', {'tables': tables})  # Исправлен путь к шаблону
 
 
-# === Добавление строки в таблицу ===
 def add_row(request, table_id):
     """
     Функция для добавления строки в таблицу.
     """
+    # Получаем таблицу по ID
     table = get_object_or_404(CustomTable, id=table_id)
-
+    
     if request.method == "POST":
-        form = CustomRowForm(request.POST)
+        # Передаём таблицу в форму
+        form = CustomRowForm(request.POST, table=table, user=request.user)
         if form.is_valid():
-            # Сохраняем данные из формы, но без сохранения в БД
-            row = form.save(commit=False)
+            # Сохраняем данные из формы
+            row = form.save(commit=False, user=request.user)
             row.table = table  # Привязываем строку к таблице
-            row.country = form.cleaned_data.get('country')  # Сохраняем введённое значение страны
             row.save()  # Сохраняем строку в БД
+            row.manually_updated = form.cleaned_data.get('manually_updated', False)
             return redirect('custom_row_list', table_id=table.id)
         else:
             # Логирование ошибок для диагностики
             print(form.errors)
+            print("Form errors:", form.errors)
     else:
-        # Инициализация формы для GET-запроса
-        form = CustomRowForm()
+        # Создаём пустую форму, передавая таблицу
+        form = CustomRowForm(table=table, user=request.user)
 
-    # Начальные значения для валют и сумм
-    last_values = {
-        'deal_amount': '',
-        'deal_amount_currency': 'UAH',
-        'paid_amount': '',
-        'paid_amount_currency': 'UAH',
-        'expected_profit': '',
-        'expected_profit_currency': 'UAH',
-    }
-
-    # Рендеринг шаблона с передачей формы и начальных значений
+    # Рендеринг шаблона с формой
     return render(
-        request, 
-        'clients/custom_row_form.html', 
+        request,
+        'clients/custom_row_form.html',
         {
             'form': form,
-            'table': table,
-            'last_values': last_values
+            'table': table
         }
     )
 
