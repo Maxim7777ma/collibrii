@@ -2,6 +2,9 @@ from django import forms
 from .models import Client, CustomTable, CustomRow
 import datetime
 import json
+from django.utils.timezone import now
+import locale
+import platform
 from datetime import date
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.auth.models import User
@@ -126,7 +129,8 @@ class CustomRowForm(forms.ModelForm):
         self.table = table
         self.user = user  # Текущий пользователь
         additional_data = {}
-        
+        print(f"📅 Загруженная initial record_date: {self.fields['record_date'].initial}")
+
         
           # Определяем QuerySet для поля `updated_by`
         if table and table.group:
@@ -169,7 +173,7 @@ class CustomRowForm(forms.ModelForm):
         
         for date_field in ['record_date', 'due_date', 'inquiry_date']:
             date_value = additional_data.get(date_field)
-            # Добавляем поле с `TextInput`, формат для пользователя `ДД-ММ-ГГГГ`
+
             self.fields[date_field] = forms.CharField(
             required=False,
             widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ДД-ММ-ГГГГ'}),
@@ -178,11 +182,11 @@ class CustomRowForm(forms.ModelForm):
 
             if date_value:
                 try:
-                    parsed_date = datetime.datetime.strptime(date_value, '%d-%m-%Y').date()
-                    self.fields[date_field].initial = parsed_date.strftime('%d-%m-%Y')  # Оставляем формат "ДД-ММ-ГГГГ"
+                    # Парсим `YYYY-MM-DD` и сохраняем в `DD-MM-YYYY`
+                    parsed_date = datetime.datetime.strptime(date_value, '%Y-%m-%d').date()
+                    self.fields[date_field].initial = parsed_date.strftime('%d-%m-%Y')  
                 except ValueError:
-                    self.fields[date_field].initial = None  # Если дата битая, пусть будет пустая
-       
+                     self.fields[date_field].initial = None  # Если дата битая, пусть будет пустая
         
        # Генерация динамических полей из table.visible_fields
         if table and table.visible_fields:
@@ -263,69 +267,141 @@ class CustomRowForm(forms.ModelForm):
         # ✅ Если вручную ничего не выбрано, ставим только текущего пользователя
         return selected_users if selected_users else [self.user]
     
+
+
+
+    def clean_record_date(self):
+        date_value = self.cleaned_data.get('record_date')
+
+        if isinstance(date_value, datetime.date):  # ✅ Уже дата → возвращаем без изменений
+            return date_value
+
+        if date_value:
+            try:
+                return datetime.datetime.strptime(date_value, '%d-%m-%Y').date()
+            except ValueError:
+                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ")
+        return None   
+
+    def clean_due_date(self):
+        date_value = self.cleaned_data.get('due_date')
+
+        if isinstance(date_value, datetime.date):  
+            return date_value
+
+        if date_value:
+            try:
+                return datetime.datetime.strptime(date_value, '%d-%m-%Y').date()
+            except ValueError:
+                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ")
+        return None  
+
+    def clean_inquiry_date(self):
+        date_value = self.cleaned_data.get('inquiry_date')
+
+        if isinstance(date_value, datetime.date):  
+            return date_value
+
+        if date_value:
+            try:
+                return datetime.datetime.strptime(date_value, '%d-%m-%Y').date()
+            except ValueError:
+                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ")
+        return None 
+
     def save(self, commit=True, user=None):
         """
         Сохранение формы. Динамические поля сохраняются в additional_data.
         """
+        
         instance = super().save(commit=False)
+         # ✅ Обновляем `last_updated`
+        instance.last_updated = now()
+
+        # ✅ Определяем операционную систему и устанавливаем нужную локаль
+        system_platform = platform.system()
+
+        if system_platform == "Windows":
+            locale.setlocale(locale.LC_TIME, 'Ukrainian_Ukraine.1251')  # Windows
+        else:
+            locale.setlocale(locale.LC_TIME, 'uk_UA.UTF-8')  # Linux/Mac
+
+    # ✅ Форматируем дату в стиле "30 січня 2025 р. 15:45"
+        formatted_last_updated = instance.last_updated.strftime('%d %B %Y р. %H:%M')
         additional_data = {}
 
         model_fields = self._meta.fields if hasattr(self._meta, 'fields') else []
         if model_fields is None:
             model_fields = []
 
-    # Сохраняем только динамические данные
+        # Сохраняем только динамические данные
         for field_name in self.fields:
             if field_name not in model_fields:  # Только динамические поля
-                value = self.cleaned_data[field_name]
+                value = self.cleaned_data.get(field_name)  # ✅ Используем get(), чтобы избежать KeyError
 
-                # Преобразуем дату в строку
-                # ✅ Дата сохраняется в формате "ДД-ММ-ГГГГ"
-                if isinstance(value, datetime.date):
-                    additional_data[field_name] = value.strftime('%d-%m-%Y')
+            # ✅ Если это дата, форматируем в YYYY-MM-DD
+            if isinstance(value, datetime.date):
+                additional_data[field_name] = value.strftime('%Y-%m-%d')  
 
-                    # ✅ Если строка, пробуем конвертировать
-                elif isinstance(value, str):
-                    try:
-                        parsed_date = datetime.datetime.strptime(value, '%d-%m-%Y').date()
-                        additional_data[field_name] = parsed_date.strftime('%d-%m-%Y')
-                    except ValueError:
-                        additional_data[field_name] = value  # Сохраняем как есть, если это не дата
+            elif isinstance(value, datetime.datetime):
+                additional_data[field_name] = value.strftime('%Y-%m-%d %H:%M:%S')  # ✅ Время + дата
 
-                # ✅ Если поле - объект User → сохраняем username
-                elif isinstance(value, User):
-                    value = str(value.id)
+            # ✅ Если это строка (ДД-ММ-ГГГГ), конвертируем в ISO
+            elif isinstance(value, str):
+                try:
+                    parsed_date = datetime.datetime.strptime(value, '%d-%m-%Y').date()
+                    additional_data[field_name] = parsed_date.strftime('%Y-%m-%d')
+                except ValueError:
+                    additional_data[field_name] = value  # Если ошибка, оставляем как есть
 
-                # ✅ Если поле - QuerySet пользователей → преобразуем в список ID
-                elif isinstance(value, QuerySet) and value.model == User:
-                    value = list(map(str, value.values_list('id', flat=True)))
+            # ✅ Если поле - объект User → сохраняем ID
+            elif isinstance(value, User):
+                additional_data[field_name] = str(value.id)
 
-                # ✅ Если поле - список пользователей → преобразуем в список ID
-                elif isinstance(value, list):
-                    value = [str(user.id) if isinstance(user, User) else str(user) for user in value]
+            # ✅ Если поле - QuerySet пользователей → преобразуем в список ID
+            elif isinstance(value, QuerySet) and value.model == User:
+                additional_data[field_name] = list(map(str, value.values_list('id', flat=True)))
 
-                # Добавляем значение в additional_data
+            # ✅ Если поле - список пользователей → преобразуем в список ID
+            elif isinstance(value, list):
+                additional_data[field_name] = [str(user.id) if isinstance(user, User) else str(user) for user in value]
+
+            # Добавляем значение в additional_data
+            else:
                 additional_data[field_name] = value
 
-        # ✅ Сериализуем additional_data в JSON
-        instance.additional_data = json.dumps(additional_data, cls=DjangoJSONEncoder)
+       
+    # ✅ Обрабатываем даты безопасно (чтобы избежать ошибки .strftime())
+        def format_date(date_value):
+            return date_value.strftime('%Y-%m-%d') if isinstance(date_value, datetime.date) else date_value
+
+        additional_data['record_date'] = format_date(self.cleaned_data.get('record_date'))
+        additional_data['due_date'] = format_date(self.cleaned_data.get('due_date'))
+        additional_data['inquiry_date'] = format_date(self.cleaned_data.get('inquiry_date'))
+        additional_data["last_updated"] = formatted_last_updated
+    # ✅ Сериализуем additional_data в JSON (но только если есть изменения)
+        if additional_data:
+            instance.additional_data = json.dumps(additional_data, cls=DjangoJSONEncoder)
 
         if commit:
             instance.save()
 
-           # ✅ Берём список выбранных пользователей или текущего пользователя
-            selected_users = self.cleaned_data.get("updated_by", [self.user])
+        # ✅ Берём список выбранных пользователей или текущего пользователя
+        selected_users = self.cleaned_data.get("updated_by")
 
+        if selected_users:
             # ✅ Если `selected_users` - QuerySet, преобразуем его в список ID
             selected_users = list(selected_users.values_list("id", flat=True)) if isinstance(selected_users, QuerySet) else [
-            user.id if isinstance(user, User) else user for user in selected_users
+                user.id if isinstance(user, User) else user for user in selected_users
             ]
+        else:
+            selected_users = [user.id] if user else []  # ✅ Если пусто, добавляем текущего пользователя
 
-            # ✅ Обновляем `updated_by`
-            instance.updated_by.set(User.objects.filter(id__in=selected_users))
-
+        # ✅ Обновляем `updated_by`
+        instance.updated_by.set(User.objects.filter(id__in=selected_users))
 
         return instance
+
     
     def clean(self):
         """
@@ -377,7 +453,7 @@ class CustomRowForm(forms.ModelForm):
 
     class Meta:
         model = CustomRow
-        exclude = ['table', 'additional_data', 'last_updated']  # Исключаем технические поля
+        exclude = ['table', 'additional_data','last_updated']  # Исключаем технические поля
 
         # Настройка виджетов
         widgets = {

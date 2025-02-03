@@ -29,13 +29,73 @@
 
         <!-- Отображение полей формы -->
         {% for field in form %}
-            {% if field.name != "manually_updated" and field.name != "updated_by" %}
+            {% if field.name != "manually_updated" and field.name != "last_updated" and field.name != "updated_by" and field.name != "record_date" and field.name != "due_date" and field.name != "inquiry_date" and field.name != "deal_amount" and field.name != "deal_amount_currency" and field.name != "paid_amount" and field.name != "paid_amount_currency" and field.name != "expected_profit" and field.name != "expected_profit_currency" %}
                 <p>
                     {{ field.label_tag }}
                     {{ field }}
                 </p>
             {% endif %}
         {% endfor %}
+    
+
+    <!-- Вывод полей сумм и валют вручную -->
+    
+        <label for="id_deal_amount">Сума угоди:</label>
+    <div class="currency-field">    
+        <input type="number" step="any" inputmode="decimal" lang="en" 
+       name="deal_amount" 
+       value="{{ form.deal_amount.value|default_if_none:''|stringformat:'.2f'|cut:','|default_if_none:'' }}" 
+       id="id_deal_amount" class="form-control currency-input">
+        <select name="deal_amount_currency" id="id_deal_amount_currency" class="form-control currency-select">
+            <option value="UAH" {% if form.deal_amount_currency.value == "UAH" %}selected{% endif %}>UAH</option>
+            <option value="USD" {% if form.deal_amount_currency.value == "USD" %}selected{% endif %}>USD</option>
+            <option value="EUR" {% if form.deal_amount_currency.value == "EUR" %}selected{% endif %}>EUR</option>
+        </select>
+    </div>
+
+    
+        <label for="id_paid_amount">Оплачена сума:</label>
+    <div class="currency-field">    
+        <input type="number" step="any" inputmode="decimal" lang="en" 
+           name="paid_amount" 
+           value="{{ form.paid_amount.value|default_if_none:''|stringformat:'.2f'|cut:','|default_if_none:'' }}" 
+           id="id_paid_amount" class="form-control currency-input">
+        <select name="paid_amount_currency" id="id_paid_amount_currency" class="form-control currency-select">
+            <option value="UAH" {% if form.paid_amount_currency.value == "UAH" %}selected{% endif %}>UAH</option>
+            <option value="USD" {% if form.paid_amount_currency.value == "USD" %}selected{% endif %}>USD</option>
+            <option value="EUR" {% if form.paid_amount_currency.value == "EUR" %}selected{% endif %}>EUR</option>
+        </select>
+    </div>
+
+    
+        <label for="id_expected_profit">Очікуваний прибуток:</label>
+    <div class="currency-field">    
+        <input type="number" step="any" inputmode="decimal" lang="en" 
+        name="expected_profit" 
+        value="{{ form.expected_profit.value|default_if_none:''|stringformat:'.2f'|cut:','|default_if_none:'' }}" 
+        id="id_expected_profit" class="form-control currency-input">
+        <select name="expected_profit_currency" id="id_expected_profit_currency" class="form-control currency-select">
+            <option value="UAH" {% if form.expected_profit_currency.value == "UAH" %}selected{% endif %}>UAH</option>
+            <option value="USD" {% if form.expected_profit_currency.value == "USD" %}selected{% endif %}>USD</option>
+            <option value="EUR" {% if form.expected_profit_currency.value == "EUR" %}selected{% endif %}>EUR</option>
+        </select>
+    </div>
+
+    <!-- Вывод полей дат вручную -->
+    <p>
+        {{ form.record_date.label_tag }}
+        <input type="date" name="record_date" value="{{ form.record_date.value|date:'Y-m-d' }}" id="id_record_date" class="form-control">
+    </p>
+
+    <p>
+        {{ form.due_date.label_tag }}
+        <input type="date" name="due_date" value="{{ form.due_date.value|date:'Y-m-d' }}" id="id_due_date" class="form-control">
+    </p>
+
+    <p>
+        {{ form.inquiry_date.label_tag }}
+        <input type="date" name="inquiry_date" value="{{ form.inquiry_date.value|date:'Y-m-d' }}" id="id_inquiry_date" class="form-control">
+    </p>    
          <!-- Поле manually_updated -->
     <div class="field-manually_updated">
         {{ form.manually_updated.label_tag }}
@@ -83,6 +143,15 @@
                 manualCheckbox.addEventListener('change', toggleUpdatedBy);
                 toggleUpdatedBy(); // Инициализация при загрузке
             }
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll(".currency-input").forEach(input => {
+                input.addEventListener("input", function() {
+                    this.value = this.value.replace(",", "."); // Заменяем запятую на точку
+                });
+            });
         });
     </script>
        

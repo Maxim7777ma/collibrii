@@ -143,3 +143,107 @@ h1 {
     margin-bottom: 15px;
 }
 
+
+
+:root {
+    --primary-color: #2c3e50;
+    --accent-color: #16a085;
+    --light-gray: #ecf0f1;
+    --dark-gray: #7f8c8d;
+    --input-bg: #ffffff;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --hover-glow: rgba(22, 160, 133, 0.3);
+}
+
+/* Общий стиль */
+.currency-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--light-gray);
+    box-shadow: 0 4px 8px var(--shadow-color);
+    transition: all 0.3s ease-in-out;
+}
+
+.currency-field:hover {
+    box-shadow: 0 6px 15px var(--hover-glow);
+    transform: scale(1.02);
+}
+
+/* Инпут суммы */
+.currency-input {
+    flex: 2;
+    padding: 12px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: var(--input-bg);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    transition: all 0.3s ease-in-out;
+}
+
+.currency-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px var(--hover-glow);
+    transform: scale(1.03);
+}
+
+/* Выпадающий список валют */
+.currency-select {
+    flex: 1;
+    padding: 10px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    color: var(--dark-gray);
+    background: var(--input-bg);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+}
+
+.currency-select:hover,
+.currency-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px var(--hover-glow);
+    transform: scale(1.05);
+}
+
+/* Метка поля (эффект всплывающей метки) */
+label {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    display: block;
+    transition: all 0.3s ease-in-out;
+}
+
+.currency-input:focus + label,
+.currency-input:not(:placeholder-shown) + label {
+    color: var(--accent-color);
+    transform: translateY(-25px);
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.currency-field {
+    animation: fadeIn 0.6s ease-in-out;
+}
