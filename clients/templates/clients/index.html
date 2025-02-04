@@ -1,70 +1,56 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Главная Страница</title>
+    <title>CRM Система</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
     <header>
         <nav>
             <ul>
-                <section id="quick-actions">
-                    <h2>Быстрые действия</h2>
-                    <button onclick="window.location.href='{% url 'client_list_leads' %}'">Лиды</button>
-                    <button onclick="window.location.href='{% url 'client_list_clients' %}'">Клиенты</button>
-                    <button onclick="window.location.href='{% url 'client_list_customers' %}'">Заказчики</button>
-                    <button onclick="window.location.href='{% url 'client_create' %}'">Добавить клиента</button>
-                    <button onclick="window.location.href='/upload-excel/'">Загрузить Excel</button>
-                </section>
-                
-                <li><a href="{% url 'client_create' %}">Добавить клиента</a></li>
-                <li><a href="/upload-excel/">Загрузить Excel</a></li>
-                <li><a href="{% url 'logout' %}">Выход</a></li>
-                
-                
-                
-                <li><a href="{% url 'custom_table_create' %}" class="btn-add">Создать таблицу</a></li>
-                <li><a href="{% url 'custom_table_list' %}" class="btn-see">Смотреть все таблицы</a></li>
-                
-
+                <li><a href="{% url 'custom_table_list' %}" class="btn-see">📂 Переглянути таблиці</a></li>
+                <li><a href="{% url 'custom_table_create' %}" class="btn-add">➕ Створити таблицю</a></li>
+                <li><a href="#about" class="btn-info">ℹ Про систему</a></li>
+                <li><a href="#features" class="btn-features">⚙ Можливості</a></li>
+                <li><a href="#contact" class="btn-contact">📞 Контакти</a></li>
+                <li><a href="{% url 'logout' %}" class="btn-logout">🚪 Вийти</a></li>
             </ul>
         </nav>
     </header>
-
+    
     <main>
         <section id="dashboard">
-            <h1>Добро пожаловать в CRM</h1>
-            <p>Выберите действие из меню для работы с клиентами.</p>
+            <h1>Ласкаво просимо до CRM</h1>
+            <p>Ефективне управління клієнтами та бізнес-процесами.</p>
         </section>
-
-        <section id="client-stats">
-            <h2>Статистика клиентов</h2>
+        
+        <section id="about">
+            <h2>Про CRM систему</h2>
+            <p>Наша CRM система допомагає автоматизувати взаємодію з клієнтами, вести бази даних та покращувати бізнес-процеси.</p>
+        </section>
+        
+        <section id="features">
+            <h2>Основні можливості</h2>
             <ul>
-                <li>Всего клиентов: {{ total_clients }}</li>
-                <li>Лидов: {{ leads }}</li>
-                <li>Клиентов: {{ clients }}</li>
-                <li>Заказчиков: {{ customers }}</li>
+                <li>📊 Ведення клієнтської бази</li>
+                <li>📆 Планування зустрічей та завдань</li>
+                <li>📩 Автоматизація розсилок</li>
+                <li>📈 Аналіз та звіти</li>
+                <li>🔐 Високий рівень безпеки</li>
             </ul>
         </section>
-
         
-        <h2>Быстрые действия</h2>
-            <section id="quick-actions">
-                <h2>Быстрые действия</h2>
-                <button onclick="window.location.href='{% url 'client_list_leads' %}'">Лиды</button>
-                <button onclick="window.location.href='{% url 'client_list_clients' %}'">Клиенты</button>
-                <button onclick="window.location.href='{% url 'client_list_customers' %}'">Заказчики</button>
-                <button onclick="window.location.href='{% url 'client_list' %}'">Все клиенты</button>
-                <button onclick="window.location.href='{% url 'client_create' %}'">Добавить клиента</button>
-            </section>
-        
+        <section id="contact">
+            <h2>Контакти</h2>
+            <p>Зв'яжіться з нами за електронною поштою <a href="mailto:support@crm.com">support@crm.com</a> або за телефоном +380 123 777 777.</p>
+        </section>
     </main>
-
+    
     <footer>
-        <p>&copy; 2025 CRM System</p>
+        <p>&copy; 2025 CRM System | Розроблено з ❤️ </p>
     </footer>
 </body>
 </html>
