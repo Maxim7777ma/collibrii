@@ -29,7 +29,7 @@
 
         <!-- Отображение полей формы -->
         {% for field in form %}
-            {% if field.name != "manually_updated" and field.name != "last_updated" and field.name != "updated_by" and field.name != "record_date" and field.name != "due_date" and field.name != "inquiry_date" and field.name != "deal_amount" and field.name != "deal_amount_currency" and field.name != "paid_amount" and field.name != "paid_amount_currency" and field.name != "expected_profit" and field.name != "expected_profit_currency" %}
+            {% if field.name != "manually_updated" and field.name != "last_updated" and field.name != "updated_by" and field.name != "record_date" and field.name != "due_date" and field.name != "inquiry_date" and field.name != "deal_amount" and field.name != "deal_amount_currency" and field.name != "paid_amount" and field.name != "paid_amount_currency" and field.name != "expected_profit" and field.name != "expected_profit_currency" and field.name != "change_status_contact" and field.name != "status" and field.name != "contact" and field.name != "priority" %}
                 <p>
                     {{ field.label_tag }}
                     {{ field }}
@@ -37,7 +37,53 @@
             {% endif %}
         {% endfor %}
     
+                 <!-- 🟢 Выпадающий список "Змінити статус контакту" -->
+                 <p>
+                    {{ form.change_status_contact.label_tag }}
+                    <select name="change_status_contact" id="id_change_status_contact" class="form-control">
+                        {% for value, label in form.fields.change_status_contact.choices %}
+                            <option value="{{ value }}" {% if form.change_status_contact.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </p>
 
+    <!-- 🟢 Выпадающий список "Статус" -->
+    <p>
+        {{ form.status.label_tag }}
+        <select name="status" id="id_status" class="form-control">
+            {% for value, label in form.fields.status.choices %}
+                <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </p>
+
+    <!-- 🟢 Выпадающий список "Контакт" -->
+    <p>
+        {{ form.contact.label_tag }}
+        <select name="contact" id="id_contact" class="form-control">
+            {% for value, label in form.fields.contact.choices %}
+                <option value="{{ value }}" {% if form.contact.value == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </p>
+
+    <!-- 🟢 Выпадающий список "Пріоритет" -->
+    <p>
+        {{ form.priority.label_tag }}
+        <select name="priority" id="id_priority" class="form-control">
+            {% for value, label in form.fields.priority.choices %}
+                <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </p>
     <!-- Вывод полей сумм и валют вручную -->
     
         <label for="id_deal_amount">Сума угоди:</label>
@@ -81,21 +127,27 @@
         </select>
     </div>
 
-    <!-- Вывод полей дат вручную -->
+     <!-- Поля дат + времени -->
     <p>
         {{ form.record_date.label_tag }}
-        <input type="date" name="record_date" value="{{ form.record_date.value|date:'Y-m-d' }}" id="id_record_date" class="form-control">
+        <input type="datetime-local" name="record_date" 
+               value="{{ form.record_date.value|date:'Y-m-d\TH:i' }}" 
+               id="id_record_date" class="form-control">
     </p>
 
     <p>
         {{ form.due_date.label_tag }}
-        <input type="date" name="due_date" value="{{ form.due_date.value|date:'Y-m-d' }}" id="id_due_date" class="form-control">
+        <input type="datetime-local" name="due_date" 
+               value="{{ form.due_date.value|date:'Y-m-d\TH:i' }}" 
+               id="id_due_date" class="form-control">
     </p>
 
     <p>
         {{ form.inquiry_date.label_tag }}
-        <input type="date" name="inquiry_date" value="{{ form.inquiry_date.value|date:'Y-m-d' }}" id="id_inquiry_date" class="form-control">
-    </p>    
+        <input type="datetime-local" name="inquiry_date" 
+               value="{{ form.inquiry_date.value|date:'Y-m-d\TH:i' }}" 
+               id="id_inquiry_date" class="form-control">
+    </p>
          <!-- Поле manually_updated -->
     <div class="field-manually_updated">
         {{ form.manually_updated.label_tag }}
@@ -150,6 +202,17 @@
             document.querySelectorAll(".currency-input").forEach(input => {
                 input.addEventListener("input", function() {
                     this.value = this.value.replace(",", "."); // Заменяем запятую на точку
+                });
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll("input[type='datetime-local']").forEach(input => {
+                input.addEventListener("blur", function() {
+                    if (this.value.length === 10) { // Если ввели только дату
+                        this.value += "T00:00"; // Добавляем 00:00 по умолчанию
+                    }
                 });
             });
         });

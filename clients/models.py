@@ -91,8 +91,15 @@ class CustomRow(models.Model):
         blank=True,
         null=True
     )
+
+    change_status_contact = models.CharField(
+    max_length=10,
+    choices=CONTACT_CHOICES,  # 👈 Добавляем `choices`
+    blank=True,
+    null=True
+    )
     # Привязка к таблице
-    table = models.ForeignKey(CustomTable, on_delete=models.CASCADE, related_name="rows")
+    table = models.ForeignKey(CustomTable, on_delete=models.CASCADE, related_name="rows", null=False, blank=False)
 
     # Фиксированные поля
     name = models.CharField(max_length=255)  # Имя клиента
@@ -143,9 +150,9 @@ class CustomRow(models.Model):
     )
 
     # Даты
-    record_date = models.DateField()  # Дата записи
-    due_date = models.DateField(blank=True, null=True)  # Срок выполнения
-    inquiry_date = models.DateField(blank=True, null=True)  # Дата обращения
+    record_date = models.DateTimeField()  # Дата записи
+    due_date = models.DateTimeField(blank=True, null=True)  # Срок выполнения
+    inquiry_date = models.DateTimeField(blank=True, null=True)  # Дата обращения
 
     # Новое поле для динамических данных
     additional_data = models.JSONField(default=dict, blank=True)  # Для хранения уникальных данных

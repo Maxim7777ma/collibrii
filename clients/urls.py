@@ -27,7 +27,8 @@ urlpatterns = [
     path('tables/update-status1/<int:pk>/', views.update_status1, name='update_status1'),
     path('tables/update-priority/<int:pk>/', views.update_priority, name='update_priority'),
     path('tables/<int:table_id>/', views.table_rows, name='table_rows'),
-    path('tables/custom_row_filter/<int:pk>/', views.custom_row_filter, name='custom_row_filter'),
+    path('tables/filter-rows/<int:table_pk>/', views.filter_rows, name='filter_rows'),
     path('tables/reset_filter/<int:pk>/', views.reset_row_filter, name='reset_row_filter'),
+    path('tables/update-field/<int:row_id>/', views.update_field, name='update_field'),
 
 ]

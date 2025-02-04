@@ -38,8 +38,53 @@ from django.contrib import messages
 from .models import CustomTable
 from .forms import CustomTableForm
 import json
+from django import template
 
 
+register = template.Library()
+
+@register.filter
+def get_item(dictionary, key):
+    if dictionary is None:
+        return "-"  # Если словарь отсутствует, вернуть дефолтное значение
+    return dictionary.get(key, "-")  # Вернуть значение по ключу или "-"
+
+@csrf_exempt
+def update_field(request, row_id):
+    """
+    Универсальный API для обновления `contact`, `status`, `priority`, `change_status_contact`.
+    Если `contact` == `change_status_contact`, то `status` меняется на `client`.
+    """
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            field = data.get("field")  # Например, 'contact', 'status' и т. д.
+            new_value = data.get("value")  # Новое значение
+
+            row = CustomRow.objects.get(id=row_id)
+            setattr(row, field, new_value)  # Устанавливаем новое значение
+
+            auto_status_change = False  # Флаг для авто-изменения статуса
+
+            # Если `contact` и `change_status_contact` совпадают, статус → client
+            if field in ["contact", "change_status_contact"]:
+                if row.contact and row.change_status_contact and row.contact == row.change_status_contact:
+                    row.status = "client"
+                    auto_status_change = True  # Сообщим фронту
+
+            row.save()
+
+            return JsonResponse({
+                "success": True,
+                "message": f"Поле {field} обновлено!",
+                "auto_status_change": auto_status_change
+            })
+        except CustomRow.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Строка не найдена!"}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+    return JsonResponse({"success": False, "error": "Некорректный запрос!"}, status=400)
 
 def get_updated_by_usernames(self):
     """
@@ -118,89 +163,45 @@ def reset_row_filter(request, pk):
     return redirect('custom_row_filter', pk=pk)
 
 
-@login_required
-def custom_row_filter(request, pk):
-    # Получаем таблицу по pk
-    table = get_object_or_404(CustomTable, pk=pk)
+import logging
 
-    # Если метод POST, извлекаем параметры фильтрации
-    filters = {
-        'name': request.POST.get('name', '').strip(),
-        'status': request.POST.get('status', '').strip(),
-        'manager': request.POST.get('manager', '').strip(),
-        'contact': request.POST.get('contact', '').strip(),
-        'min_deal_amount': request.POST.get('min_deal_amount', '').strip(),
-        'max_deal_amount': request.POST.get('max_deal_amount', '').strip(),
-        'start_date': request.POST.get('start_date', '').strip(),
-        'end_date': request.POST.get('end_date', '').strip(),
-        'priority': request.POST.get('priority', '').strip(),
-        'country': request.POST.get('country', '').strip(),
-        'city': request.POST.get('city', '').strip(),
-        'phone_number': request.POST.get('phone_number', '').strip(),
-        'email': request.POST.get('email', '').strip(),
-        'instagram_username': request.POST.get('instagram_username', '').strip(),
-    }
+logger = logging.getLogger(__name__)
 
-    # Базовый запрос
-    rows = CustomRow.objects.filter(table=table)
-
-    # Применяем фильтры
-    if filters['name']:
-        rows = rows.filter(name__icontains=filters['name'])
-    if filters['status']:
-        rows = rows.filter(status=filters['status'])
-    if filters['manager']:
-        rows = rows.filter(manager__icontains=filters['manager'])
-    if filters['contact']:
-        rows = rows.filter(contact=filters['contact'])
-    if filters['min_deal_amount']:
+def filter_rows(request, table_pk):
+    if request.method == "POST":
         try:
-            rows = rows.filter(deal_amount__gte=float(filters['min_deal_amount']))
-        except ValueError:
-            pass
-    if filters['max_deal_amount']:
-        try:
-            rows = rows.filter(deal_amount__lte=float(filters['max_deal_amount']))
-        except ValueError:
-            pass
-    if filters['start_date']:
-        rows = rows.filter(record_date__gte=filters['start_date'])
-    if filters['end_date']:
-        rows = rows.filter(record_date__lte=filters['end_date'])
-    if filters['priority']:
-        rows = rows.filter(priority=filters['priority'])
-    if filters['country']:
-        rows = rows.filter(country__icontains=filters['country'])
-    if filters['city']:
-        rows = rows.filter(city__icontains=filters['city'])
-    if filters['phone_number']:
-        rows = rows.filter(phone_number__icontains=filters['phone_number'])
-    if filters['instagram_username']:
-        rows = rows.filter(instagram_username__icontains=filters['instagram_username'])
-    if filters['email']:
-        rows = rows.filter(email__icontains=filters['email'])    
-    
+            data = json.loads(request.body)
+            table = get_object_or_404(CustomTable, pk=table_pk)
+            rows = CustomRow.objects.filter(table=table)
 
-    
-    duplicate_usernames = rows.values('instagram_username').annotate(count=models.Count('id')).filter(count__gt=1)
-    duplicate_usernames = [item['instagram_username'] for item in duplicate_usernames]
+            for field, value in data.items():
+                if value:
+                    rows = rows.filter(**{f"{field}__icontains": value})
 
-    duplicate_phones = rows.values('phone_number').annotate(count=models.Count('id')).filter(count__gt=1)
-    duplicate_phones = [item['phone_number'] for item in duplicate_phones]
+            filtered_data = []
+            for row in rows:
+                row_data = {"pk": row.pk, "fields": {}}
 
-    # Уникальные менеджеры
-    managers = CustomRow.objects.filter(table=table).values_list('manager', flat=True).distinct()
+                for field in table.visible_fields:
+                    field_name = field["name"]
+                    field_value = getattr(row, field_name, "-")
 
-    # Передача данных в шаблон
-    return render(request, 'clients/custom_row_list.html', {
-        'rows': rows,
-        'duplicate_usernames': duplicate_usernames,  # ID строк с дубликатами Instagram
-        'duplicate_phones': duplicate_phones,          # ID строк с дубликатами телефонов
-        'filters': filters,
-        'managers': managers,
-        'table': table,
-    })
+                    if isinstance(field_value, models.Manager):
+                        field_value = list(field_value.values_list('id', flat=True))
 
+                    row_data["fields"][field_name] = field_value
+
+                filtered_data.append(row_data)
+
+            return JsonResponse({"success": True, "data": filtered_data})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "Некорректный JSON"}, status=400)
+        except Exception as e:
+            print("Ошибка в filter_rows:", str(e))  # Лог ошибки
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+    return JsonResponse({"success": False, "error": "Некорректный запрос!"}, status=400)
 
 @csrf_exempt
 @login_required
@@ -433,7 +434,14 @@ def custom_row_list(request, table_id):
 
     # Загружаем видимые поля
     visible_fields = table.visible_fields or []
-    
+    select_fields = ["contact", "status", "priority", "change_status_contact"]
+    allowed_fields = [field["name"] for field in visible_fields if field["name"] in select_fields]
+     # Определяем возможные варианты значений для select (если есть choices)
+    choices = {}
+    for field in allowed_fields:
+        choices[field] = list(CustomRow.objects.values_list(field, flat=True).distinct())
+
+
     # Если visible_fields сохранены как JSON, декодируем их
     if isinstance(visible_fields, str):
         try:
@@ -507,6 +515,8 @@ def custom_row_list(request, table_id):
         'duplicate_usernames': list(duplicate_usernames),
         'duplicate_phones': list(duplicate_phones),
         'field_translations': FIELD_TRANSLATIONS, 
+        'allowed_fields': allowed_fields,  # ✅ Передаем разрешенные поля
+        'choices': choices,  # ✅ Передаем в шаблон возможные значения для select
     })
 
 
@@ -543,8 +553,10 @@ def add_row(request, table_id):
         form = CustomRowForm(request.POST, table=table, user=request.user)
         if form.is_valid():
             # Сохраняем данные из формы
-            row = form.save(commit=False, user=request.user)
+            row = form.save(commit=False, user=request.user, table=table)
             row.table = table  # Привязываем строку к таблице
+            if not row.table:  # ✅ Если `table` не установлена — устанавливаем явно
+                row.table = table  
             row.save()  # Сохраняем строку в БД
             row.manually_updated = form.cleaned_data.get('manually_updated', False)
             return redirect('custom_row_list', table_id=table.id)

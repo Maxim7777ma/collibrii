@@ -11,6 +11,36 @@
 <body>
     <h1>Список строк таблиці: {{ table.name }}</h1>
 
+    <!-- Фильтр -->
+    <button class="filter-toggle-btn" id="toggle-filters">Показати фільтри</button>
+    <div id="filter-container" class="filter-container">
+        <h3>Фільтр</h3>
+        <form id="filter-form" method="POST">
+            {% csrf_token %}
+        
+            {% for field in visible_fields %}
+                <div class="filter-group">
+                    <label for="filter-{{ field.name }}">{{ field.label }}</label>
+                    {% if field.name in allowed_fields %}
+                        <select id="filter-{{ field.name }}" name="{{ field.name }}" class="filter-dropdown">
+                            <option value="">Всі</option>
+                            {% for value in choices|get_item:field.name %}
+                                <option value="{{ value }}">{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    {% else %}
+                        <input type="text" id="filter-{{ field.name }}" name="{{ field.name }}" placeholder="Введіть значення">
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <div class="filter-buttons">
+            <button class="filter-start" type="submit">Застосувати фільтр</button>
+            <button class="filter-stop" type="button" id="reset-filters">Скинути фільтри</button>
+            </div>
+        </form>
+    </div>
+
+
     <!-- Кнопки навигации -->
     <div class="actions">
         <a href="{% url 'add_row' table.id %}" class="btn-add">Додати рядок</a>
@@ -18,7 +48,7 @@
     </div>
 
     <!-- Таблица строк -->
-    <table>
+    <table id="data-table" data-table-id="{{ table.id }}">
         <thead>
             <tr>
                 <th>ID</th>
@@ -28,7 +58,7 @@
                 <th>Дії</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="table-body">
             {% for row in rows %}
             <tr data-row-id="{{ row.id }}">
                 <td>{{ row.id }}</td>
@@ -56,6 +86,14 @@
                                 <option value="medium" {% if row.priority == 'medium' %}selected{% endif %}>Середній</option>
                                 <option value="high" {% if row.priority == 'high' %}selected{% endif %}>Високий</option>
                             </select>
+                        {% elif field.name == 'change_status_contact' %}
+                            <select class="editable-select change-status-contact-select" data-row-id="{{ row.id }}">
+                                <option value="contact_1" {% if row.change_status_contact == 'contact_1' %}selected{% endif %}>Контакт 1</option>
+                                <option value="contact_2" {% if row.change_status_contact == 'contact_2' %}selected{% endif %}>Контакт 2</option>
+                                <option value="contact_3" {% if row.change_status_contact == 'contact_3' %}selected{% endif %}>Контакт 3</option>
+                                <option value="contact_4" {% if row.change_status_contact == 'contact_4' %}selected{% endif %}>Контакт 4</option>
+                            </select>
+                            
                         {% elif field.name == 'deal_amount' %}
                             {{ row.deal_amount }} {{ row.deal_amount_currency }}
                         {% elif field.name == 'paid_amount' %}
@@ -194,5 +232,151 @@
             });
         });
     </script>
+    <script>
+        // Получение CSRF-токена
+        function getCSRFToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    return cookie.substring('csrftoken='.length);
+                }
+            }
+            return '';
+        }
+    
+        // Функция обновления полей (универсальная)
+        function updateField(rowId, fieldName, value) {
+            fetch(`/clients/tables/update-field/${rowId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({ field: fieldName, value: value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`${data.message}`);
+    
+                    // ✅ Если контакт == статусу контакта, статус меняем на client
+                    if (data.auto_status_change) {
+                        document.querySelector(`.status-select[data-row-id="${rowId}"]`).value = 'client';
+                    }
+                } else {
+                    alert('Ошибка обновления.');
+                }
+            })
+            .catch(error => console.error('Ошибка сети:', error));
+        }
+    
+        // Вешаем обработчик на все выпадающие списки
+        document.querySelectorAll('.editable-select').forEach(select => {
+            select.addEventListener('change', function () {
+                const rowId = this.dataset.rowId;
+                const fieldName = this.classList.contains('contact-select') ? 'contact'
+                    : this.classList.contains('status-select') ? 'status'
+                    : this.classList.contains('priority-select') ? 'priority'
+                    : this.classList.contains('change-status-contact-select') ? 'change_status_contact'
+                    : null;
+    
+                if (fieldName) {
+                    updateField(rowId, fieldName, this.value);
+                }
+            });
+        });
+    </script>
+     <!-- JavaScript -->
+     <script>
+        document.getElementById("toggle-filters").addEventListener("click", function () {
+            let filterContainer = document.getElementById("filter-container");
+            if (filterContainer.classList.contains("show-filters")) {
+                filterContainer.classList.remove("show-filters");
+                this.textContent = "Показати фільтри"; // Меняем текст кнопки
+            } else {
+                filterContainer.classList.add("show-filters");
+                this.textContent = "Сховати фільтри"; // Меняем текст кнопки
+            }
+        });
+        
+        document.getElementById("filter-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            fetchFilteredData();
+        });
+        
+        document.getElementById("reset-filters").addEventListener("click", function () {
+            resetFilter();
+        });
+        
+        function fetchFilteredData() {
+            let tableElement = document.getElementById("data-table");
+            if (!tableElement) {
+                console.error("Ошибка: элемент #data-table не найден!");
+                return;
+            }
+        
+            let tablePk = tableElement.getAttribute("data-table-id");
+            let formData = {};
+        
+            document.querySelectorAll("#filter-form input, #filter-form select").forEach(input => {
+                if (input.value && input.name !== "csrfmiddlewaretoken") {  // ✅ Исключаем CSRF-токен
+                    formData[input.name] = input.value;
+                }
+            });
+        
+            console.log("Отправляем JSON:", JSON.stringify(formData));
+        
+            fetch(`/clients/tables/filter-rows/${tablePk}/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()  // ✅ CSRF-токен передаем только в заголовке!
+                },
+                body: JSON.stringify(formData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    applyFilter(data.data);
+                } else {
+                    console.error("Ошибка:", data.error);
+                }
+            })
+            .catch(error => console.error("Ошибка сети:", error));
+        }
+        
+        
+        function applyFilter(rows) {
+            let allRows = document.querySelectorAll("tbody tr");
+            let visibleIds = rows.map(row => String(row.pk));  // Приводим к строке
+        
+            allRows.forEach(tr => {
+                let rowId = tr.getAttribute("data-row-id");
+                if (rowId) {
+                    if (visibleIds.includes(rowId)) {
+                        tr.classList.remove("hidden-row"); // Показываем строку
+                    } else {
+                        tr.classList.add("hidden-row"); // Скрываем строку
+                    }
+                }
+            });
+        }
+        
+        function resetFilter() {
+            let allRows = document.querySelectorAll("tbody tr");
+            allRows.forEach(tr => tr.classList.remove("hidden-row")); // Показываем все строки обратно
+            document.querySelectorAll("#filter-form input, #filter-form select").forEach(input => input.value = "");
+            
+            fetchFilteredData(); // 🚀 Запускаем обновление
+        }
+        
+    </script>
+    
+    <style>
+        .hidden-row {
+            display: none !important;
+        }
+    </style>
 </body>
 </html>

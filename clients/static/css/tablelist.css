@@ -31,14 +31,60 @@ h1 {
 
 /* Кнопка "Добавить" */
 .btn-add {
-    background-color: #4caf50;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
     color: white;
+    background: linear-gradient(135deg, #00c853, #1de9b6);
+    border-radius: 50px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Эффект всплеска света */
+.btn-add::before {
+    content: "";
+    position: absolute;
+    width: 400%;
+    height: 400%;
+    top: -100%;
+    left: -100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    transform: scale(0);
+    transition: transform 0.5s ease-out;
+}
+
+/* Анимация при клике */
+.btn-add:active::before {
+    transform: scale(1);
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Эффект парящей кнопки */
+.btn-add:hover {
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #00e676, #00bfa5);
+    box-shadow: 0 8px 25px rgba(0, 200, 83, 0.6);
+}
+
+/* Добавляем мягкую пульсацию */
+@keyframes pulse-green {
+    0% { box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4); }
+    50% { box-shadow: 0 8px 30px rgba(0, 200, 83, 0.6); }
+    100% { box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4); }
 }
 
 .btn-add:hover {
-    background-color: #45a049;
-    transform: translateY(-3px);
+    animation: pulse-green 1.5s infinite;
 }
+
 
 /* Кнопка "Назад" */
 .btn-cancel {
@@ -152,4 +198,267 @@ tr:hover {
         padding: 8px 10px;
         font-size: 0.9rem;
     }
+}
+
+#table-body {
+    display: table-row-group; /* Должно быть включено */
+}
+
+.hidden-row {
+    display: none;
+}
+
+
+/* Контейнер фильтров */
+.filter-container {
+    display: none; /* Фильтры скрыты изначально */
+    background: linear-gradient(135deg, #6e8efb, #a777e3); /* Градиент */
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    transition: all 0.4s ease-in-out;
+}
+
+/* Фильтр-группа */
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+/* Лейблы */
+.filter-group label {
+    font-weight: bold;
+    color: white;
+    margin-bottom: 5px;
+}
+
+/* Поля ввода и селекты */
+.filter-group input,
+.filter-group select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 14px;
+}
+
+
+.filter-toggle-btn {
+    background-color: #1bb2d1ab;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+    margin-bottom: 1rem;
+}
+
+/* Кнопки */
+ .filter-apply-btn, .filter-reset-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+.filter-toggle-btn:hover {
+    background-color: #45a049;
+}
+
+/* Кнопка сброса */
+.filter-reset-btn {
+    background-color: #f44336;
+}
+
+.filter-reset-btn:hover {
+    background-color: #d32f2f;
+}
+
+/* Анимация */
+.show-filters {
+    display: block !important;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.filter-buttons{
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    margin-bottom: 20px;
+}/* Глобальные настройки */
+.filter-start, .filter-stop {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border: none;
+}
+
+/* Кнопка "Start" */
+.filter-start {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #00f2ff, #0077ff);
+    color: #ffffff;
+    padding: 14px 28px;
+    font-size: 1.2rem;
+    border-radius: 50px;
+    box-shadow: 0 10px 30px rgba(0, 242, 255, 0.3);
+    transition: 0.4s ease-in-out;
+}
+
+/* Эффект неонового свечения */
+.filter-start:hover {
+    background: linear-gradient(135deg, #00f2ff, #00aaff);
+    box-shadow: 0 10px 40px rgba(0, 242, 255, 0.6);
+    transform: translateY(-3px);
+}
+
+/* Всплеск света */
+.filter-start::before {
+    content: "";
+    position: absolute;
+    width: 400%;
+    height: 400%;
+    top: -150%;
+    left: -150%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+    transform: scale(0);
+    transition: transform 0.5s ease-out;
+}
+
+/* Анимация при клике */
+.filter-start:active::before {
+    transform: scale(1);
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.filter-start:active {
+    transform: scale(0.96);
+}
+
+/* Кнопка "Stop" */
+.filter-stop {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #ff4e50, #f44336);
+    color: white;
+    padding: 14px 28px;
+    font-size: 1.2rem;
+    border-radius: 50px;
+    box-shadow: 0 10px 30px rgba(244, 67, 54, 0.3);
+    transition: 0.4s ease-in-out;
+    position: relative;
+}
+
+/* Эффект живого пульсирования */
+@keyframes pulse {
+    0% { box-shadow: 0 10px 30px rgba(244, 67, 54, 0.3); }
+    50% { box-shadow: 0 12px 40px rgba(244, 67, 54, 0.6); }
+    100% { box-shadow: 0 10px 30px rgba(244, 67, 54, 0.3); }
+}
+
+.filter-stop:hover {
+    background: linear-gradient(135deg, #ff5a5a, #d62c2c);
+    box-shadow: 0 12px 40px rgba(244, 67, 54, 0.6);
+    transform: translateY(-3px);
+    animation: pulse 1.5s infinite;
+}
+
+/* Эффект плазменного всплеска */
+.filter-stop::before {
+    content: "";
+    position: absolute;
+    width: 400%;
+    height: 400%;
+    top: -150%;
+    left: -150%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    transform: scale(0);
+    transition: transform 0.5s ease-out;
+}
+
+.filter-stop:active::before {
+    transform: scale(1);
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.filter-stop:active {
+    transform: scale(0.96);
+}
+
+
+.btn-back {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    border-radius: 50px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 6px 20px rgba(37, 117, 252, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Эффект всплеска света */
+.btn-back::before {
+    content: "";
+    position: absolute;
+    width: 400%;
+    height: 400%;
+    top: -100%;
+    left: -100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    transform: scale(0);
+    transition: transform 0.5s ease-out;
+}
+
+/* Анимация при клике */
+.btn-back:active::before {
+    transform: scale(1);
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Эффект парящей кнопки */
+.btn-back:hover {
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #7b1fa2, #1e88e5);
+    box-shadow: 0 8px 25px rgba(37, 117, 252, 0.6);
+}
+
+/* Добавляем мягкую пульсацию */
+@keyframes pulse {
+    0% { box-shadow: 0 6px 20px rgba(37, 117, 252, 0.4); }
+    50% { box-shadow: 0 8px 30px rgba(37, 117, 252, 0.6); }
+    100% { box-shadow: 0 6px 20px rgba(37, 117, 252, 0.4); }
+}
+
+.btn-back:hover {
+    animation: pulse 1.5s infinite;
 }

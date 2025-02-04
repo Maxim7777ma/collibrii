@@ -140,6 +140,14 @@ class CustomRowForm(forms.ModelForm):
 
         initial_users = self.instance.updated_by.all() if self.instance.pk else []    
 
+
+        self.fields['change_status_contact'] = forms.ChoiceField(
+            label="Змінити статус контакту",
+            choices=CustomRow.CONTACT_CHOICES,
+            widget=forms.Select(attrs={'class': 'form-control'}),
+            required=False
+        )
+
         
 
         # Поле для ручного управления
@@ -176,15 +184,15 @@ class CustomRowForm(forms.ModelForm):
 
             self.fields[date_field] = forms.CharField(
             required=False,
-            widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ДД-ММ-ГГГГ'}),
+            widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ДД-ММ-ГГГГ ЧЧ:ММ'}),
             label=FIELD_TRANSLATIONS.get(date_field, date_field)
         )
 
             if date_value:
                 try:
-                    # Парсим `YYYY-MM-DD` и сохраняем в `DD-MM-YYYY`
-                    parsed_date = datetime.datetime.strptime(date_value, '%Y-%m-%d').date()
-                    self.fields[date_field].initial = parsed_date.strftime('%d-%m-%Y')  
+                     # Парсим `YYYY-MM-DD HH:MM` и сохраняем в `DD-MM-YYYY HH:MM`
+                    parsed_date = datetime.datetime.strptime(date_value, '%Y-%m-%d %H:%M').date()
+                    self.fields[date_field].initial = parsed_date.strftime('%d-%m-%Y %H:%M')  
                 except ValueError:
                      self.fields[date_field].initial = None  # Если дата битая, пусть будет пустая
         
@@ -204,9 +212,9 @@ class CustomRowForm(forms.ModelForm):
                 if field_name in ['deal_amount', 'paid_amount', 'expected_profit']:
                     self.fields[field_name] = forms.DecimalField(label=field_label, required=False)
                 elif field_name in ['record_date', 'due_date', 'inquiry_date']:
-                    self.fields[field_name] = forms.DateField(
+                    self.fields[field_name] = forms.DateTimeField(
                     label=field_label,
-                    widget=forms.DateInput(attrs={'type': 'date'}),
+                    widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
                     required=False
                 )
                 elif field_name == 'status':  # Для выпадающего списка "Статус"
@@ -230,6 +238,15 @@ class CustomRowForm(forms.ModelForm):
                     widget=forms.Select(attrs={'class': 'form-control'}),
                     required=False
                 ) 
+                    
+                elif field_name =='change_status_contact':
+                    self.fields[field_name] = forms.ChoiceField(
+                    label=field_label,
+                    choices=CustomRow.CONTACT_CHOICES,
+                    widget=forms.Select(attrs={'class': 'form-control'}),
+                    required=False
+                )
+
                 elif field_name == 'updated_by':
                     self.fields[field_name] = forms.ModelMultipleChoiceField(
                     queryset=queryset,
@@ -273,51 +290,81 @@ class CustomRowForm(forms.ModelForm):
     def clean_record_date(self):
         date_value = self.cleaned_data.get('record_date')
 
-        if isinstance(date_value, datetime.date):  # ✅ Уже дата → возвращаем без изменений
+        if isinstance(date_value, datetime.datetime):  # ✅ Если уже `datetime`, оставляем как есть
             return date_value
+
+        if isinstance(date_value, datetime.date):  # ✅ Если только дата, добавляем `00:00`
+            return datetime.datetime.combine(date_value, datetime.time(0, 0))
 
         if date_value:
             try:
-                return datetime.datetime.strptime(date_value, '%d-%m-%Y').date()
+                if ' ' in date_value:  # ✅ Если есть пробел → значит, уже содержит время
+                    return datetime.datetime.strptime(date_value, '%d-%m-%Y %H:%M')
+                return datetime.datetime.strptime(date_value, '%d-%m-%Y')  # ✅ Только дата → добавим `00:00`
             except ValueError:
-                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ")
-        return None   
+                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ ЧЧ:ММ")
+        return None  
+
 
     def clean_due_date(self):
         date_value = self.cleaned_data.get('due_date')
 
-        if isinstance(date_value, datetime.date):  
+        if isinstance(date_value, datetime.datetime):
             return date_value
+
+        if isinstance(date_value, datetime.date):
+            return datetime.datetime.combine(date_value, datetime.time(0, 0))
 
         if date_value:
             try:
-                return datetime.datetime.strptime(date_value, '%d-%m-%Y').date()
+                if ' ' in date_value:
+                    return datetime.datetime.strptime(date_value, '%d-%m-%Y %H:%M')
+                return datetime.datetime.strptime(date_value, '%d-%m-%Y')
             except ValueError:
-                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ")
+                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ ЧЧ:ММ")
         return None  
 
     def clean_inquiry_date(self):
         date_value = self.cleaned_data.get('inquiry_date')
 
-        if isinstance(date_value, datetime.date):  
+        if isinstance(date_value, datetime.datetime):
             return date_value
+
+        if isinstance(date_value, datetime.date):
+            return datetime.datetime.combine(date_value, datetime.time(0, 0))
 
         if date_value:
             try:
-                return datetime.datetime.strptime(date_value, '%d-%m-%Y').date()
+                if ' ' in date_value:
+                    return datetime.datetime.strptime(date_value, '%d-%m-%Y %H:%M')
+                return datetime.datetime.strptime(date_value, '%d-%m-%Y')
             except ValueError:
-                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ")
-        return None 
+                raise forms.ValidationError("Дата повинна бути у форматі ДД-ММ-ГГГГ ЧЧ:ММ")
+        return None  
 
-    def save(self, commit=True, user=None):
+    def save(self, commit=True, user=None,table=None):
         """
         Сохранение формы. Динамические поля сохраняются в additional_data.
         """
         
         instance = super().save(commit=False)
+
+            # ✅ Убеждаемся, что у строки есть `table`
+         # ✅ Принудительно устанавливаем `table`, если она передана
+        if table:
+            instance.table = table  # Связываем строку с таблицей
+
+    # ✅ Проверяем, действительно ли `table` установлена
+        if not instance.table:
+            raise ValueError("Ошибка: CustomRow должен быть связан с таблицей (table).")
+
+
          # ✅ Обновляем `last_updated`
         instance.last_updated = now()
-
+        def format_datetime(value):
+            if isinstance(value, datetime.datetime):
+                return value.strftime('%d %B %Y р. %H:%M')
+            return value
         # ✅ Определяем операционную систему и устанавливаем нужную локаль
         system_platform = platform.system()
 
@@ -327,7 +374,7 @@ class CustomRowForm(forms.ModelForm):
             locale.setlocale(locale.LC_TIME, 'uk_UA.UTF-8')  # Linux/Mac
 
     # ✅ Форматируем дату в стиле "30 січня 2025 р. 15:45"
-        formatted_last_updated = instance.last_updated.strftime('%d %B %Y р. %H:%M')
+        formatted_last_updated = format_datetime(instance.last_updated)
         additional_data = {}
 
         model_fields = self._meta.fields if hasattr(self._meta, 'fields') else []
@@ -349,8 +396,12 @@ class CustomRowForm(forms.ModelForm):
             # ✅ Если это строка (ДД-ММ-ГГГГ), конвертируем в ISO
             elif isinstance(value, str):
                 try:
-                    parsed_date = datetime.datetime.strptime(value, '%d-%m-%Y').date()
-                    additional_data[field_name] = parsed_date.strftime('%Y-%m-%d')
+                    if ' ' in value:  # Если в строке есть пробел → это дата + время
+                        parsed_date = datetime.datetime.strptime(value, '%d-%m-%Y %H:%M')
+                    else:  # Если пробела нет → это только дата
+                        parsed_date = datetime.datetime.strptime(value, '%d-%m-%Y')
+                        parsed_date = parsed_date.replace(hour=0, minute=0)  # Добавляем 00:00  # ✅ Теперь сохраняется дата + время
+                        additional_data[field_name] = parsed_date.strftime('%d-%m-%Y %H:%M')
                 except ValueError:
                     additional_data[field_name] = value  # Если ошибка, оставляем как есть
 
@@ -372,33 +423,37 @@ class CustomRowForm(forms.ModelForm):
 
        
     # ✅ Обрабатываем даты безопасно (чтобы избежать ошибки .strftime())
-        def format_date(date_value):
-            return date_value.strftime('%Y-%m-%d') if isinstance(date_value, datetime.date) else date_value
+        
+        def format_date(value):
+            if isinstance(value, datetime.datetime):  
+                return value.strftime('%d-%m-%Y %H:%M')  # ✅ Дата + время (если уже datetime)
+            if isinstance(value, datetime.date):  
+                return value.strftime('%d-%m-%Y %H:%M')  # ✅ Если только дата — добавляем `00:00`
+            return value
 
         additional_data['record_date'] = format_date(self.cleaned_data.get('record_date'))
         additional_data['due_date'] = format_date(self.cleaned_data.get('due_date'))
         additional_data['inquiry_date'] = format_date(self.cleaned_data.get('inquiry_date'))
-        additional_data["last_updated"] = formatted_last_updated
+        
+         # ✅ Теперь сохраняем оба формата `last_updated`
+        additional_data["last_updated"] = instance.last_updated.strftime('%Y-%m-%d %H:%M')  # ISO-формат
+        additional_data["last_updated_human"] = format_datetime(instance.last_updated)  # Человекочитаемый формат
     # ✅ Сериализуем additional_data в JSON (но только если есть изменения)
         if additional_data:
             instance.additional_data = json.dumps(additional_data, cls=DjangoJSONEncoder)
 
         if commit:
-            instance.save()
+            instance.save()  # ✅ Теперь объект имеет `id`
 
-        # ✅ Берём список выбранных пользователей или текущего пользователя
-        selected_users = self.cleaned_data.get("updated_by")
+# ✅ Проверяем, есть ли `selected_users`
+        selected_users = self.cleaned_data.get('updated_by') or []  # Если пусто, получаем пустой список
 
-        if selected_users:
-            # ✅ Если `selected_users` - QuerySet, преобразуем его в список ID
-            selected_users = list(selected_users.values_list("id", flat=True)) if isinstance(selected_users, QuerySet) else [
-                user.id if isinstance(user, User) else user for user in selected_users
-            ]
-        else:
-            selected_users = [user.id] if user else []  # ✅ Если пусто, добавляем текущего пользователя
+# ✅ Преобразуем `selected_users` в список пользователей
+        selected_users_qs = User.objects.filter(id__in=[user.id if isinstance(user, User) else user for user in selected_users])
 
-        # ✅ Обновляем `updated_by`
-        instance.updated_by.set(User.objects.filter(id__in=selected_users))
+# ✅ Устанавливаем ManyToManyField, но только если объект уже сохранён
+        if instance.pk:  # Проверяем, что объект имеет `id`
+            instance.updated_by.set(selected_users_qs)  # Теперь можно обновить связи
 
         return instance
 
@@ -460,11 +515,13 @@ class CustomRowForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-control'}),
             'contact': forms.Select(attrs={'class': 'form-control'}),
             'priority': forms.Select(attrs={'class': 'form-control'}),
+            'change_status_contact': forms.Select(attrs={'class': 'form-control'}),
             # 'record_date': forms.DateInput(attrs={'type': 'date'}, format='%d-%m-%Y'),
             # 'due_date': forms.DateInput(attrs={'type': 'date'}, format='%d-%m-%Y'),
             # 'inquiry_date': forms.DateInput(attrs={'type': 'date'}, format='%d-%m-%Y'),
             'updated_by': forms.SelectMultiple(attrs={'class': 'form-control'}),
             'manually_updated': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'instagram_link': forms.URLInput(attrs={'placeholder': 'https://instagram.com/...'}),
         }
         
        
