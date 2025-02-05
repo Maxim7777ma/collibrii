@@ -150,7 +150,7 @@ class CustomRow(models.Model):
     )
 
     # Даты
-    record_date = models.DateTimeField()  # Дата записи
+    record_date = models.DateTimeField(blank=True, null=True)  # Дата записи
     due_date = models.DateTimeField(blank=True, null=True)  # Срок выполнения
     inquiry_date = models.DateTimeField(blank=True, null=True)  # Дата обращения
 

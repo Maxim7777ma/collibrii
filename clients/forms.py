@@ -499,9 +499,8 @@ class CustomRowForm(forms.ModelForm):
         # Проверяем даты на корректность
         record_date = cleaned_data.get('record_date')
         due_date = cleaned_data.get('due_date')
-        if not record_date:
-            self.add_error('record_date', "Дата запису є обов'язковою.")
-        if due_date and record_date and due_date < record_date:
+        
+        if record_date and due_date and due_date < record_date:
             self.add_error('due_date', "Дата виконання не може бути раніше дати запису.")
 
         return cleaned_data
