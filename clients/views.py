@@ -162,10 +162,12 @@ def reset_row_filter(request, pk):
     # Перенаправляем на страницу фильтрации без параметров
     return redirect('custom_row_filter', pk=pk)
 
-
+from django.utils.timezone import make_aware
+import pytz
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 def filter_rows(request, table_pk):
     if request.method == "POST":
@@ -174,14 +176,59 @@ def filter_rows(request, table_pk):
             table = get_object_or_404(CustomTable, pk=table_pk)
             rows = CustomRow.objects.filter(table=table)
 
+            # Получаем локальный часовой пояс Django
+            local_tz = pytz.timezone("Europe/Kyiv")  # 🔥 Укажи свой!
+
+            # Проверяем новые фильтры (start_datetime, end_datetime)
+            start_datetime = data.get("start_datetime")
+            end_datetime = data.get("end_datetime")
+
+            def parse_datetime(date_str):
+                """
+                Конвертирует дату из любого формата в datetime с учетом часового пояса.
+                """
+                if not date_str:
+                    return None
+
+                try:
+                    # Проверяем формат YYYY-MM-DDTHH:MM (от input type="datetime-local")
+                    if "T" in date_str:
+                        parsed_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M")
+                    else:
+                        parsed_date = datetime.strptime(date_str, "%d-%m-%Y %H:%M")
+                    
+                    return make_aware(parsed_date, local_tz).astimezone(pytz.UTC)
+                except ValueError:
+                    logger.error(f"Ошибка парсинга даты: {date_str}")
+                    return None
+
+            # Применяем фильтрацию по датам
+            start_datetime = parse_datetime(start_datetime)
+            end_datetime = parse_datetime(end_datetime)
+
+            if start_datetime:
+                rows = rows.filter(
+                    models.Q(inquiry_date__gte=start_datetime) |
+                    models.Q(due_date__gte=start_datetime) |
+                    models.Q(record_date__gte=start_datetime)
+                )
+
+            if end_datetime:
+                rows = rows.filter(
+                    models.Q(inquiry_date__lte=end_datetime) |
+                    models.Q(due_date__lte=end_datetime) |
+                    models.Q(record_date__lte=end_datetime)
+                )
+
+            # Оставляем остальные фильтры как есть
             for field, value in data.items():
-                if value:
+                if value and field not in ["start_datetime", "end_datetime"]:
                     rows = rows.filter(**{f"{field}__icontains": value})
 
+            # Формируем ответ
             filtered_data = []
             for row in rows:
                 row_data = {"pk": row.pk, "fields": {}}
-
                 for field in table.visible_fields:
                     field_name = field["name"]
                     field_value = getattr(row, field_name, "-")
@@ -190,7 +237,6 @@ def filter_rows(request, table_pk):
                         field_value = list(field_value.values_list('id', flat=True))
 
                     row_data["fields"][field_name] = field_value
-
                 filtered_data.append(row_data)
 
             return JsonResponse({"success": True, "data": filtered_data})
@@ -198,10 +244,11 @@ def filter_rows(request, table_pk):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Некорректный JSON"}, status=400)
         except Exception as e:
-            print("Ошибка в filter_rows:", str(e))  # Лог ошибки
+            logger.error(f"Ошибка в filter_rows: {str(e)}")
             return JsonResponse({"success": False, "error": str(e)}, status=400)
 
     return JsonResponse({"success": False, "error": "Некорректный запрос!"}, status=400)
+
 
 @csrf_exempt
 @login_required

@@ -17,25 +17,39 @@
         <h3>Фільтр</h3>
         <form id="filter-form" method="POST">
             {% csrf_token %}
-        
+    
+            <!-- Оставшиеся текстовые и выпадающие фильтры -->
             {% for field in visible_fields %}
-                <div class="filter-group">
-                    <label for="filter-{{ field.name }}">{{ field.label }}</label>
-                    {% if field.name in allowed_fields %}
-                        <select id="filter-{{ field.name }}" name="{{ field.name }}" class="filter-dropdown">
-                            <option value="">Всі</option>
-                            {% for value in choices|get_item:field.name %}
-                                <option value="{{ value }}">{{ value }}</option>
-                            {% endfor %}
-                        </select>
-                    {% else %}
-                        <input type="text" id="filter-{{ field.name }}" name="{{ field.name }}" placeholder="Введіть значення">
-                    {% endif %}
-                </div>
+                {% if field.name not in "last_updated inquiry_date due_date record_date" %}
+                    <div class="filter-group">
+                        <label for="filter-{{ field.name }}">{{ field.label }}</label>
+                        {% if field.name in allowed_fields %}
+                            <select id="filter-{{ field.name }}" name="{{ field.name }}" class="filter-dropdown">
+                                <option value="">Всі</option>
+                                {% for value in choices|get_item:field.name %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="text" id="filter-{{ field.name }}" name="{{ field.name }}" placeholder="Введіть значення">
+                        {% endif %}
+                    </div>
+                {% endif %}
+                <!-- Поле "Дата початку" -->
             {% endfor %}
+            <div class="filter-group">
+                <label for="filter-start_datetime">Дата початку</label>
+                <input type="datetime-local" id="filter-start_datetime" name="start_datetime">
+            </div>
+    
+            <!-- Поле "Дата кінця" -->
+            <div class="filter-group">
+                <label for="filter-end_datetime">Дата кінця</label>
+                <input type="datetime-local" id="filter-end_datetime" name="end_datetime">
+            </div>
             <div class="filter-buttons">
-            <button class="filter-start" type="submit">Застосувати фільтр</button>
-            <button class="filter-stop" type="button" id="reset-filters">Скинути фільтри</button>
+                <button class="filter-start" type="submit">Застосувати фільтр</button>
+                <button class="filter-stop" type="button" id="reset-filters">Скинути фільтри</button>
             </div>
         </form>
     </div>
