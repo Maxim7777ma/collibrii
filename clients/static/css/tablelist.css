@@ -465,3 +465,312 @@ tr:hover {
 .btn-back:hover {
     animation: pulse 1.5s infinite;
 }
+
+
+/* Стили для контейнера пагинации */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Базовые стили кнопок */
+.page-btn {
+    padding: 10px 18px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    color: white;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    box-shadow: 0px 4px 12px rgba(37, 117, 252, 0.5);
+    transition: all 0.3s ease-in-out;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+}
+
+/* Анимация при наведении */
+.page-btn:hover {
+    background: linear-gradient(135deg, #2575fc, #6a11cb);
+    box-shadow: 0px 6px 15px rgba(106, 17, 203, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Анимация при нажатии */
+.page-btn:active {
+    transform: translateY(1px);
+    box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Кнопки "Первая" и "Последняя" */
+.first, .last {
+    background: linear-gradient(135deg, #ff8c00, #ff4500);
+    box-shadow: 0px 4px 12px rgba(255, 69, 0, 0.5);
+}
+
+.first:hover, .last:hover {
+    background: linear-gradient(135deg, #ff4500, #ff8c00);
+    box-shadow: 0px 6px 15px rgba(255, 69, 0, 0.6);
+}
+
+/* Кнопки "Следующая" и "Предыдущая" */
+.prev, .next {
+    background: linear-gradient(135deg, #008080, #20b2aa);
+    box-shadow: 0px 4px 12px rgba(32, 178, 170, 0.5);
+}
+
+.prev:hover, .next:hover {
+    background: linear-gradient(135deg, #20b2aa, #008080);
+    box-shadow: 0px 6px 15px rgba(32, 178, 170, 0.6);
+}
+
+/* Стили для текста с номером страницы */
+.page-info {
+    font-size: 18px;
+    font-weight: bold;
+    color: #444;
+    padding: 10px 15px;
+    background: #f8f8f8;
+    border-radius: 20px;
+    box-shadow: inset 2px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+/* 📂 Заголовок "Завантаження Excel" */
+.excel-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #5a72a7;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 0px 3px 10px rgba(90, 114, 167, 0.3);
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: fadeInDown 0.8s ease-in-out forwards;
+}
+
+/* 📤 Форма загрузки файла */
+.excel-upload-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-radius: 10px;
+    background: rgba(200, 220, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(90, 114, 167, 0.15);
+    animation: slideIn 1s ease-in-out;
+}
+
+/* 🎨 Основной стиль для input[type=file] */
+.file-input {
+    position: relative;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    color: transparent;
+    width: 100%;
+    max-width: 250px;
+    padding: 12px;
+    border: 2px solid rgba(90, 114, 167, 0.4);
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(114, 167, 255, 0.1), rgba(90, 114, 167, 0.1));
+    box-shadow: 0 4px 10px rgba(90, 114, 167, 0.2);
+    transition: all 0.3s ease-in-out;
+}
+
+/* 🌟 Скрываем стандартный текст input[type="file"] */
+.file-input::-webkit-file-upload-button {
+    visibility: hidden;
+}
+
+.file-input::before {
+    content: "📂 Виберіть файл"; /* Стандартный текст */
+    font-size: 16px;
+    color: #5a72a7;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+/* 🖱 Hover эффект */
+.file-input:hover {
+    border-color: rgba(114, 167, 255, 0.6);
+    background: linear-gradient(135deg, rgba(114, 167, 255, 0.2), rgba(90, 114, 167, 0.2));
+    box-shadow: 0 6px 16px rgba(114, 167, 255, 0.3);
+}
+
+/* ✨ Active эффект */
+.file-input:active {
+    transform: scale(0.98);
+}
+
+/* 🎭 Если файл выбран, меняем текст */
+.file-input:valid::before {
+    content: "✅ Файл вибрано!";
+    color: #4a8578;
+}
+
+/* 🔘 Кнопка загрузки */
+.upload-btn {
+    background: linear-gradient(135deg, #72a7ff, #5a72a7);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 12px rgba(114, 167, 255, 0.3);
+    transform: translateY(0);
+}
+
+.upload-btn:hover {
+    background: linear-gradient(135deg, #5a72a7, #72a7ff);
+    box-shadow: 0 6px 16px rgba(114, 167, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.upload-btn:active {
+    transform: scale(0.98);
+}
+
+/* 🔔 Вывод сообщений */
+.message-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.message-item {
+    padding: 12px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: fadeInUp 0.6s ease-in-out forwards;
+}
+
+.message-item.success {
+    background: linear-gradient(135deg, #72ffb6, #5aa77a);
+}
+
+.message-item.error {
+    background: linear-gradient(135deg, #ff7272, #a75a5a);
+}
+
+/* 🔍 Заголовок "Знайдені дублікати" */
+.duplicate-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #5a72a7;
+    text-align: center;
+    margin-top: 20px;
+    text-shadow: 0px 3px 8px rgba(90, 114, 167, 0.2);
+    opacity: 0;
+    animation: fadeInDown 0.8s ease-in-out forwards;
+}
+
+/* 🆕 Заголовок "Нові записи" */
+.new-entries-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #4e6597;
+    text-align: center;
+    margin-top: 20px;
+    text-shadow: 0px 3px 8px rgba(90, 114, 167, 0.2);
+    opacity: 0;
+    animation: fadeInDown 1s ease-in-out forwards;
+}
+
+/* 🟦 Блок с дубликатами */
+.duplicates-block {
+    background: rgba(230, 240, 255, 0.2);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(150, 170, 200, 0.15);
+    opacity: 0;
+    animation: fadeIn 1.2s ease-in-out forwards;
+}
+
+/* 💠 Блок с новыми записями */
+.new-entries-block {
+    background: rgba(220, 235, 255, 0.2);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(120, 140, 180, 0.15);
+    opacity: 0;
+    animation: fadeIn 1.4s ease-in-out forwards;
+}
+
+/* 🌊 Горизонтальная линия */
+.divider {
+    margin: 20px 0;
+    border: none;
+    height: 2px;
+    background: linear-gradient(to right, rgba(110, 168, 255, 0), rgba(110, 168, 255, 0.6), rgba(110, 168, 255, 0));
+}
+
+/* 🌟 Анимации */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

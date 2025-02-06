@@ -30,5 +30,6 @@ urlpatterns = [
     path('tables/filter-rows/<int:table_pk>/', views.filter_rows, name='filter_rows'),
     path('tables/reset_filter/<int:pk>/', views.reset_row_filter, name='reset_row_filter'),
     path('tables/update-field/<int:row_id>/', views.update_field, name='update_field'),
-
+    path('tables/<int:table_pk>/upload-excel/', views.upload_excel, name='upload_excel'),
+    path('tables/<int:table_pk>/resolve-duplicate/', views.resolve_duplicate, name='resolve_duplicate'),
 ]

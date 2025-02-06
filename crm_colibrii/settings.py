@@ -133,3 +133,5 @@ LOGOUT_REDIRECT_URL = '/login/'  # Переход после выхода
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# 🔥 Увеличиваем лимит полей в POST-запросах
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # Установи большое значение

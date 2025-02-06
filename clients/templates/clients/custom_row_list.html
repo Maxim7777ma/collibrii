@@ -60,6 +60,33 @@
         <a href="{% url 'add_row' table.id %}" class="btn-add">Додати рядок</a>
         <a href="{% url 'custom_table_list' %}" class="btn-back">Назад до таблиць</a>
     </div>
+    <h2 class="excel-title">📂 Завантаження Excel</h2>
+
+    <!-- Форма для загрузки файла -->
+    <form action="{% url 'upload_excel' table.id %}" method="POST" enctype="multipart/form-data" class="excel-upload-form">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".xls,.xlsx" required class="file-input">
+        <button type="submit" class="upload-btn">📤 Завантажити</button>
+    </form>
+    
+    <!-- Вывод сообщений -->
+    {% if messages %}
+        <ul class="message-list">
+            {% for message in messages %}
+                <li class="message-item {{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    
+    <hr class="divider">
+    
+    <!-- Блок с дубликатами -->
+    <h2 class="duplicate-title">🔍 Знайдені дублікати</h2>
+    <div id="duplicates-container" class="duplicates-block"></div>
+    
+    <!-- Блок с новыми записями -->
+    <h2 class="new-entries-title">🆕 Нові записи</h2>
+    <div id="new-entries-container" class="new-entries-block"></div>
 
     <!-- Таблица строк -->
     <table id="data-table" data-table-id="{{ table.id }}">
@@ -153,7 +180,20 @@
             {% endfor %}
         </tbody>
     </table>
+<!-- Пагинация -->
+<div class="pagination">
+    {% if rows.has_previous %}
+        <a href="?page=1{% for k, v in filters.items %}&{{ k }}={{ v }}{% endfor %}" class="page-btn first">⏮ Первая</a>
+        <a href="?page={{ rows.previous_page_number }}{% for k, v in filters.items %}&{{ k }}={{ v }}{% endfor %}" class="page-btn prev">⬅ Предыдущая</a>
+    {% endif %}
 
+    <span class="page-info">Страница <strong>{{ rows.number }}</strong> из <strong>{{ total_pages }}</strong></span>
+
+    {% if rows.has_next %}
+        <a href="?page={{ rows.next_page_number }}{% for k, v in filters.items %}&{{ k }}={{ v }}{% endfor %}" class="page-btn next">➡ Следующая</a>
+        <a href="?page={{ total_pages }}{% for k, v in filters.items %}&{{ k }}={{ v }}{% endfor %}" class="page-btn last">⏭ Последняя</a>
+    {% endif %}
+</div>
     <!-- JavaScript -->
     <script>
         // Получение CSRF-токена
@@ -386,6 +426,84 @@
         }
         
     </script>
+
+
+<script>
+    document.getElementById("upload-form").addEventListener("submit", function(event) {
+        event.preventDefault(); // ❌ Останавливаем обновление страницы
+    
+        let formData = new FormData(this);
+        let tableId = document.getElementById("data-table").dataset.tableId; // ✅ Получаем ID таблицы
+        
+        console.log("📤 Отправляем файл:", formData.get("file"));
+    
+        fetch(`/clients/tables/${tableId}/upload-excel/`, { // ✅ Исправленный URL
+            method: "POST",
+            body: formData, // ✅ Передаем файл в FormData
+            headers: {
+                "X-CSRFToken": getCSRFToken() // ✅ Добавляем CSRF-токен
+            }
+        })
+        .then(response => response.text())  // ✅ Проверяем, что приходит от сервера
+        .then(text => {
+            console.log("📩 Ответ сервера (сырые данные):", text);
+            if (!text.trim()) throw new Error("❌ Сервер вернул пустой ответ!");
+            return JSON.parse(text);  // ✅ Только если JSON корректный
+        })
+        .then(data => {
+            console.log("✅ JSON-данные:", data);
+            if (data.success) {
+                displayDuplicates(data.duplicates);
+                displayNewEntries(data.new_entries);
+            } else {
+                alert("❌ Помилка: " + data.error);
+            }
+        })
+        .catch(error => {
+            console.error("❌ Ошибка:", error);
+            alert("⚠ Помилка при завантаженні: " + error.message);
+        });
+    });
+    
+    
+    function resolveDuplicate(existing_id, new_data, action) {
+        let payload = {
+            existing_id: existing_id,
+            new_data: new_data ? JSON.parse(decodeURIComponent(new_data)) : null, // ✅ Декодируем и парсим JSON
+            action: action
+        };
+    
+        let tableId = document.getElementById("data-table").dataset.tableId; // ✅ Получаем table.id
+    
+        fetch(`/clients/tables/${tableId}/resolve-duplicate/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCSRFToken()
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("❌ Сервер вернул ошибку: " + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert("✅ Дубль успешно обработан!");
+                location.reload(); // 🔄 Перезагружаем страницу после обработки
+            } else {
+                alert("❌ Помилка: " + data.error);
+            }
+        })
+        .catch(error => console.error("❌ Ошибка:", error));
+    }
+    
+    function getCSRFToken() {
+        return document.querySelector("input[name='csrfmiddlewaretoken']").value;
+    }
+</script>
     
     <style>
         .hidden-row {

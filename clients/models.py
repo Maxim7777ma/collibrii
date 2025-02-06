@@ -102,12 +102,12 @@ class CustomRow(models.Model):
     table = models.ForeignKey(CustomTable, on_delete=models.CASCADE, related_name="rows", null=False, blank=False)
 
     # Фиксированные поля
-    name = models.CharField(max_length=255)  # Имя клиента
+    name = models.CharField(max_length=255,blank=True, null=True)  # Имя клиента
     instagram_username = models.CharField(max_length=40, blank=True, null=True)  # Никнейм Instagram
     instagram_link = models.URLField(blank=True, null=True)  # Ссылка Instagram
     phone_number = models.CharField(max_length=20, blank=True, null=True)  # Номер телефона
     email = models.EmailField(max_length=255, blank=True, null=True, verbose_name='Електронна пошта')
-    manager = models.CharField(max_length=255)  # Менеджер (обязательное)
+    manager = models.CharField(max_length=255,blank=True, null=True)  # Менеджер (обязательное)
     country = models.CharField(max_length=255, blank=True, null=True)  # Поле страны
     city = models.CharField(max_length=255, blank=True, null=True)  # Поле города
     status = models.CharField(max_length=50, blank=True, null=True, choices=[

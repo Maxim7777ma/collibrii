@@ -1,3 +1,6 @@
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import transaction 
+import pandas as pd
 import json
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Client
@@ -474,32 +477,72 @@ import json
 
 def custom_row_list(request, table_id):
     """
-    Отображение строк таблицы.
+    Отображение строк таблицы с пагинацией, фильтрацией и поиском дубликатов.
     """
+
     # Получаем таблицу
     table = get_object_or_404(CustomTable, id=table_id)
 
-    # Загружаем видимые поля
-    visible_fields = table.visible_fields or []
+    # Загружаем видимые поля (если сохранены как JSON, декодируем)
+    if isinstance(table.visible_fields, str):
+        try:
+            visible_fields = json.loads(table.visible_fields)
+        except json.JSONDecodeError:
+            visible_fields = []
+    else:
+        visible_fields = table.visible_fields or []
+
+    # Формируем список доступных полей
+    visible_fields = [
+        {"name": field["name"], "label": FIELD_TRANSLATIONS.get(field["name"], field["name"])}
+        for field in visible_fields if isinstance(field, dict)
+    ]
+
+    # Определяем поля, которые можно фильтровать через select
     select_fields = ["contact", "status", "priority", "change_status_contact"]
     allowed_fields = [field["name"] for field in visible_fields if field["name"] in select_fields]
-     # Определяем возможные варианты значений для select (если есть choices)
+
+    # Получаем возможные значения для select (уникальные значения полей)
     choices = {}
     for field in allowed_fields:
         choices[field] = list(CustomRow.objects.values_list(field, flat=True).distinct())
 
+    # --- 🔹 ФИЛЬТРАЦИЯ ---
+    filters = {key: request.GET[key] for key in request.GET if request.GET[key] and key != 'page'}
+    query = Q(table=table)
 
-    # Если visible_fields сохранены как JSON, декодируем их
-    if isinstance(visible_fields, str):
-        try:
-            visible_fields = json.loads(visible_fields)
-        except json.JSONDecodeError:
-            visible_fields = []  # Если данные некорректны, задаем пустой список
+    # Применяем фильтры (например, статус, менеджер и т.д.)
+    for key, value in filters.items():
+        query &= Q(**{f"{key}__icontains": value})
 
-    # Загружаем строки таблицы
-    rows = CustomRow.objects.filter(table=table)
+    # Получаем отфильтрованные строки
+    rows = CustomRow.objects.filter(query).order_by("-id")
 
-    # Декодируем additional_data для каждой строки
+    # --- 🔹 ПОИСК ДУБЛИКАТОВ (по всей таблице) ---
+    all_rows = CustomRow.objects.filter(table=table)
+    duplicate_usernames = [
+        key for key, count in Counter(
+            all_rows.values_list("instagram_username", flat=True)
+        ).items() if count > 1
+    ]
+    duplicate_phones = [
+        key for key, count in Counter(
+            all_rows.values_list("phone_number", flat=True)
+        ).items() if count > 1
+    ]
+
+    # --- 🔹 ПАГИНАЦИЯ (по 20 строк) ---
+    paginator = Paginator(rows, 20)
+    page = request.GET.get("page")
+
+    try:
+        rows = paginator.page(page)
+    except PageNotAnInteger:
+        rows = paginator.page(1)
+    except EmptyPage:
+        rows = paginator.page(paginator.num_pages)
+
+    # --- 🔹 ОБРАБОТКА additional_data (JSON поля) ---
     for row in rows:
         if isinstance(row.additional_data, str):
             try:
@@ -507,65 +550,31 @@ def custom_row_list(request, table_id):
             except json.JSONDecodeError:
                 row.additional_data = {}
 
-    # Поиск дубликатов
-    # Поиск дубликатов ТОЛЬКО в пределах текущей таблицы
-    # Собираем все значения `instagram_username` и `phone_number` из additional_data
-    instagram_usernames = []
-    phone_numbers = []
+        # Обрабатываем поле updated_by (преобразуем ID в usernames)
+        updated_by_ids = row.additional_data.get("updated_by", [])
 
-    for row in rows:
-        instagram_usernames.append(row.additional_data.get('instagram_username'))
-        phone_numbers.append(row.additional_data.get('phone_number'))
-
-    # Убираем пустые значения и считаем дубликаты
-    duplicate_usernames = [key for key, count in Counter(filter(None, instagram_usernames)).items() if count > 1]
-    duplicate_phones = [key for key, count in Counter(filter(None, phone_numbers)).items() if count > 1]
-
-    if isinstance(table.visible_fields, str):
-        try:
-            table.visible_fields = json.loads(table.visible_fields)
-        except json.JSONDecodeError:
-            table.visible_fields = []
-
-    visible_fields = [
-        {"name": field["name"], "label": FIELD_TRANSLATIONS.get(field["name"], field["name"])}
-        for field in table.visible_fields
-    ]    
-
-    # Обрабатываем additional_data для каждой строки
-    for row in rows:
-        if isinstance(row.additional_data, str):
-            try:
-                additional_data = json.loads(row.additional_data)
-            except json.JSONDecodeError:
-                additional_data = {}
-        else:
-            additional_data = row.additional_data or {}
-
-        # Получаем список ID пользователей из additional_data
-        updated_by_ids = additional_data.get("updated_by", [])
-
-        if isinstance(updated_by_ids, str):  # Если ID записаны как строка (например, "['1', '2']")
+        if isinstance(updated_by_ids, str):
             updated_by_ids = updated_by_ids.strip("[]").replace("'", "").split(", ")
 
         updated_by_ids = [int(uid) for uid in updated_by_ids if str(uid).isdigit()]
-
-        # Находим пользователей по ID и преобразуем в список никнеймов
         users = User.objects.filter(id__in=updated_by_ids).values_list("username", flat=True)
         row.updated_by_names = ", ".join(users) if users else "-"
-    
 
-    return render(request, 'clients/custom_row_list.html', {
-        'table': table,
-        'rows': rows,
-        'visible_fields': visible_fields,  # Передаем список видимых полей
-        'duplicate_usernames': list(duplicate_usernames),
-        'duplicate_phones': list(duplicate_phones),
-        'field_translations': FIELD_TRANSLATIONS, 
-        'allowed_fields': allowed_fields,  # ✅ Передаем разрешенные поля
-        'choices': choices,  # ✅ Передаем в шаблон возможные значения для select
+    # --- 🔹 ВЫВОД В ШАБЛОН ---
+    return render(request, "clients/custom_row_list.html", {
+        "table": table,
+        "rows": rows,  # ✅ Теперь отдает только 20 строк (пагинация)
+        "visible_fields": visible_fields,
+        "duplicate_usernames": list(duplicate_usernames),
+        "duplicate_phones": list(duplicate_phones),
+        "field_translations": FIELD_TRANSLATIONS,
+        "allowed_fields": allowed_fields,
+        "choices": choices,
+        "filters": filters,  # ✅ Передаем фильтры в шаблон
+        "paginator": paginator,  # ✅ Объект пагинации
+        "current_page": page,  # ✅ Номер текущей страницы
+        "total_pages": paginator.num_pages,  # ✅ Общее число страниц
     })
-
 
 # === Создание новой таблицы ===
 def custom_table_create(request):
@@ -826,3 +835,101 @@ def main_dashboard(request):
         'clients': clients,
         'customers': customers,
     })
+
+
+
+logger = logging.getLogger(__name__)
+
+@csrf_exempt
+def upload_excel(request, table_pk):
+    """
+    Функция загрузки Excel-файла в таблицу CustomTable.
+    """
+    table = get_object_or_404(CustomTable, pk=table_pk)
+
+    if request.method == "POST" and request.FILES.get("file"):
+        try:
+            uploaded_file = request.FILES["file"]
+            df = pd.read_excel(uploaded_file, dtype=str, keep_default_na=False)  # Читаем Excel
+
+            # ✅ Проверяем заголовки и переводим их в правильный формат
+            print("Оригинальные заголовки:", df.columns.tolist())
+
+            if "FIELD_TRANSLATIONS" in globals():
+                FIELD_TRANSLATIONS_REVERSE = {v: k for k, v in FIELD_TRANSLATIONS.items()}
+                df.rename(columns=FIELD_TRANSLATIONS_REVERSE, inplace=True)
+
+            print("Преобразованные заголовки:", df.columns.tolist())
+
+            # ✅ Загружаем `visible_fields`
+            if isinstance(table.visible_fields, str):
+                try:
+                    visible_fields = json.loads(table.visible_fields)
+                except json.JSONDecodeError:
+                    visible_fields = []
+            else:
+                visible_fields = table.visible_fields or []
+
+            # ✅ Фильтруем только нужные колонки
+            allowed_columns = [field["name"] for field in visible_fields if isinstance(field, dict)]
+            df = df[[col for col in allowed_columns if col in df.columns]]
+
+            print("Финальные колонки:", df.columns.tolist())
+
+            # ✅ Проверяем, есть ли загружаемые данные
+            if df.empty:
+                messages.error(request, "Ошибка: Файл не содержит данных для загрузки!")
+                return redirect("custom_row_list", table_id=table_pk)
+
+            # ✅ Добавляем строки в базу
+            new_entries = []
+            for _, row in df.iterrows():
+                row_data = row.to_dict()
+
+                # Если additional_data есть, сохраняем как JSON
+                row_data["additional_data"] = json.dumps(row_data)
+
+                new_entries.append(CustomRow(table=table, **row_data))
+
+            # ✅ Массовая загрузка
+            CustomRow.objects.bulk_create(new_entries)
+
+            print("✅ Загружено записей:", len(new_entries))  # Проверяем, сколько реально загружено
+
+            messages.success(request, f"Успешно загружено {len(new_entries)} записей!")
+            return redirect("custom_row_list", table_id=table_pk)
+
+        except Exception as e:
+            messages.error(request, f"Ошибка загрузки: {str(e)}")
+            return redirect("custom_row_list", table_id=table_pk)
+
+    messages.error(request, "Ошибка: Некорректный запрос!")
+    return redirect("custom_row_list", table_id=table_pk)
+
+@csrf_exempt
+def resolve_duplicate(request, table_pk):
+    """
+    Обработка выбора пользователя: заменить, оставить или добавить.
+    """
+    if request.method == "POST":
+        data = json.loads(request.body)
+        existing_id = data.get("existing_id")
+        new_data = data.get("new_data")
+        action = data.get("action")
+
+        try:
+            if action == "replace":
+                row = CustomRow.objects.get(id=existing_id)
+                for key, value in new_data.items():  # ✅ НЕ ДЕЛАЕМ `json.loads()`
+                    setattr(row, key, value)
+                row.save()
+            
+            elif action == "add":
+                CustomRow.objects.create(**new_data, table_id=table_pk)  # ✅ НЕ ДЕЛАЕМ `json.loads()`
+
+            return JsonResponse({"success": True})
+        
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)})
+    
+    return JsonResponse({"success": False, "error": "Некорректный запрос!"})
