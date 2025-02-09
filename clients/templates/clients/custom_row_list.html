@@ -27,7 +27,7 @@
                             <select id="filter-{{ field.name }}" name="{{ field.name }}" class="filter-dropdown">
                                 <option value="">Всі</option>
                                 {% for value in choices|get_item:field.name %}
-                                <option value="{{ value }}">{{ translations|get_item:value|default:value }}</option>
+                                <option value="{{ value }}">{{ translations|get_item:field.name|get_item:value|default:value }}</option>
                                 {% endfor %}
                             </select>
                         {% else %}
@@ -81,13 +81,18 @@
     <hr class="divider">
     
     <!-- Блок с дубликатами -->
-    <h2 class="duplicate-title">🔍 Знайдені дублікати</h2>
+    
+    <h2 class="duplicate-title"> Знайдені дублікати</h2>
+    
     <div id="duplicates-container" class="duplicates-block"></div>
     
     <!-- Блок с новыми записями -->
     <h2 class="new-entries-title">🆕 Нові записи</h2>
     <div id="new-entries-container" class="new-entries-block"></div>
 
+    
+    <h3 id="filter-results-count" style="display: none;"> Знайдено записів: <span id="filtered-count">0</span></h3>
+    
     <!-- Таблица строк -->
     <table id="data-table" data-table-id="{{ table.id }}">
         <thead>
@@ -180,6 +185,9 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <button id="load-more-btn" style="display: none;">Підвантажити ще</button> <!-- ✅ Кнопка "Подгрузить еще" --> 
+
 <!-- Пагинация -->
 <div class="pagination">
     {% if rows.has_previous %}
@@ -350,8 +358,21 @@
         document.addEventListener("DOMContentLoaded", function () {
             console.log("📌 DOM загружен, инициализация фильтров...");
             let urlParams = new URLSearchParams(window.location.search);
-            let hasFilters = false;
 
+            // ✅ Проверяем, сколько строк было загружено ранее
+            let savedLoadedRows = localStorage.getItem("loadedRows");
+
+            // ✅ Если есть сохраненные данные — используем их
+            if (savedLoadedRows) {
+                window.loadedRows = parseInt(savedLoadedRows, 10);
+            } else {
+                window.loadedRows = 30;  // По умолчанию загружаем 30 строк
+            }
+
+            console.log("🔄 Восстановлено количество загруженных строк:", window.loadedRows);
+
+            let hasFilters = false;
+            
 
             // ✅ Применяем фильтры из URL
             document.querySelectorAll("#filter-form input, #filter-form select").forEach(input => {
@@ -438,16 +459,19 @@
                 let filters = {};
                 document.querySelectorAll("#filter-form input, #filter-form select").forEach(input => {
                     if (input.name !== "csrfmiddlewaretoken" && input.value.trim()) {
-                        filters[input.name] = input.value.trim();
+                        
+                        let value = input.value.trim();
+
+                         // Если поле есть в словаре перевода, заменяем на английское значение
+                        if (translations[input.name] && translations[input.name][value]) {
+                        value = translations[input.name][value];
+                        }
+
+                        filters[input.name] = value;
                     }
                 });
 
-                // ✅ Перед отправкой переводим значения
-                Object.keys(filters).forEach(key => {
-                    if (translations[key] && translations[key][filters[key]]) {
-                        filters[key] = translations[key][filters[key]]; // Меняем на английский перед отправкой
-                    }
-                });
+                
             
                 // ✅ Правильный лог в консоль
                 console.log("📤 Отправляем фильтр:", filters);
@@ -486,134 +510,193 @@
             // 🔹 Применение фильтра
             function applyFilter(rows, duplicateUsernames = [], duplicatePhones = []) {
                 console.log("📌 Фильтр применен, найдено строк:", rows.length);
-                console.log("🔍 Дубликаты никнеймов:", duplicateUsernames);
-                console.log("🔍 Дубликаты телефонов:", duplicatePhones);
-
-                // ✅ После получения данных переводим английские значения обратно в укр
-                Object.keys(translations).forEach(key => {
-                    Object.entries(translations[key]).forEach(([ru, en]) => {
-                        rows.forEach(row => {
-                            if (row.fields[key] === en) {
-                                row.fields[key] = ru; // Меняем обратно на русский
-                            }
-                        });
-                    });
-                });
             
+                let countBlock = document.getElementById("filter-results-count");
+                let countSpan = document.getElementById("filtered-count");
                 let tableBody = document.querySelector("#table-body");
-                tableBody.innerHTML = "";  // ✅ Полностью очищаем таблицу перед вставкой
+                let loadMoreBtn = document.getElementById("load-more-btn");
             
-                rows.forEach(row => {
-                    let tr = document.createElement("tr");
-                    tr.setAttribute("data-row-id", row.pk);
+                // ✅ Обновляем количество найденных строк
+                countSpan.textContent = rows.length;
+                countBlock.style.display = rows.length > 0 ? "block" : "none";
             
-                    let tdId = document.createElement("td");
-                    tdId.textContent = row.pk;
-                    tr.appendChild(tdId);
+
+
+                // ✅ Если строки найдены, показываем блок с анимацией
+                if (rows.length > 0) {
+                    countSpan.textContent = rows.length;
+                    countBlock.classList.add("show");  // Добавляем класс для анимации появления
+                } else {
+                    countBlock.classList.remove("show"); // Скрываем блок, если записей нет
+                }
+
+                // ✅ Если строк больше 30, показываем кнопку "Підвантажити ще"
+                if (rows.length > 30) {
+                    loadMoreBtn.classList.add("show");
+                } else {
+                    loadMoreBtn.classList.remove("show");
+                }
+                // ✅ Очищаем таблицу перед новой загрузкой
+                tableBody.innerHTML = "";
             
-                    Object.keys(row.fields).forEach(field => {
-                        let td = document.createElement("td");
-                        let value = row.fields[field] || "-";
-            
-                        // ✅ Подсветка дубликатов (Instagram, телефон)
-                        if (field === "instagram_username" && duplicateUsernames.includes(value)) {
-                            td.classList.add("duplicate");
-                            console.log(`🚨 Дубликат Instagram: ${value}`);
-                        }
-                        if (field === "phone_number" && duplicatePhones.includes(value)) {
-                            td.classList.add("duplicate");
-                            console.log(`🚨 Дубликат телефона: ${value}`);
-                        }
-            
-                        // ✅ Логика отображения селектов
-                        if (["status", "contact", "priority"].includes(field)) {
-                            let select = document.createElement("select");
-                            select.classList.add("editable-select");
-                            select.dataset.rowId = row.pk;
-            
-                            let options = {
-                                "status": { "lead": "Лід", "client": "Клієнт", "customer": "Замовник" },
-                                "contact": { "contact_1": "Контакт 1", "contact_2": "Контакт 2", "contact_3": "Контакт 3", "contact_4": "Контакт 4" },
-                                "priority": { "low": "Низький", "medium": "Середній", "high": "Високий" }
-                            };
-            
-                            Object.entries(options[field]).forEach(([value, label]) => {
-                                let opt = document.createElement("option");
-                                opt.value = value;
-                                opt.textContent = label;
-                                if (row.fields[field] === value) opt.selected = true;
-                                select.appendChild(opt);
-                            });
-            
-                            // ✅ Добавляем обработчик изменения
-                            select.addEventListener("change", function () {
-                                updateField(row.pk, field, this.value);
-                            });
-            
-                            td.appendChild(select);
-                        }
-                        // ✅ Форматируем ссылки Instagram
-                        else if (field === "instagram_username") {
-                            let link = document.createElement("a");
-                            link.href = row.fields["instagram_link"] || "#";
-                            link.textContent = value;
-                            link.target = "_blank";
-                            td.appendChild(link);
-                        }
-                        // ✅ Обычные текстовые поля
-                        else {
-                            td.textContent = value;
-                        }
-            
-                        tr.appendChild(td);
-                    });
-            
-                    // ✅ Кнопки "Редагувати" и "Видалити"
-                    let tdActions = document.createElement("td");
-                    tdActions.innerHTML = `
-                        <a href="/clients/tables/${document.getElementById("data-table").getAttribute("data-table-id")}/edit/${row.pk}/" class="btn-edit">Редагувати</a>
-                        <button class="btn-delete" data-row-id="${row.pk}">Видалити</button>
-                    `;
-                    tr.appendChild(tdActions);
-            
-                    tableBody.appendChild(tr);
+                // ✅ Сохраняем все строки в глобальную переменную
+                window.allFilteredRows = rows;
+                window.loadedRows = 0; // Счетчик загруженных строк
+
+                // ✅ Сохраняем список всех дубликатов в глобальные переменные
+                window.duplicateUsernames = duplicateUsernames;
+                window.duplicatePhones = duplicatePhones;
+
+                 // ✅ Загружаем столько строк, сколько было загружено до обновления страницы
+                let rowsToLoadCount = Math.min(window.loadedRows, rows.length);
+                rows.slice(0, rowsToLoadCount).forEach(row => {
+                    addTableRow(row, duplicateUsernames, duplicatePhones);
                 });
             
-                // ✅ Реинициализируем кнопки удаления
-                document.querySelectorAll('.btn-delete').forEach(button => {
-                    button.addEventListener('click', function () {
-                        const rowId = this.dataset.rowId;
-                        if (confirm(`Вы уверены, что хотите удалить строку с ID ${rowId}?`)) {
-                            fetch(`/clients/tables/${document.getElementById("data-table").getAttribute("data-table-id")}/delete-row/${rowId}/`, {
-                                method: 'POST',
-                                headers: { "X-CSRFToken": getCSRFToken() }
-                            })
-                            .then(response => {
-                                if (response.ok) {
-                                    document.querySelector(`tr[data-row-id="${rowId}"]`).remove();
-                                } else {
-                                    alert('Ошибка удаления строки.');
-                                }
-                            })
-                            .catch(error => console.error('Ошибка сети:', error));
-                        }
-                    });
+                // ✅ Запускаем `rows.forEach()`, но только для первых 30 строк
+                rows.slice(0, 30).forEach(row => {
+                    addTableRow(row, duplicateUsernames, duplicatePhones);
                 });
             
-                console.log("✅ Таблица обновлена!");
+                // ✅ Обновляем счетчик загруженных строк
+                window.loadedRows = 30;
+            
+                // ✅ Показываем кнопку, если строк больше 30
+                loadMoreBtn.style.display = rows.length > 30 ? "block" : "none";
+            }
+            
+
+            document.getElementById("load-more-btn").addEventListener("click", function () {
+                loadMoreRows(); // Загружаем еще 30 строк
+            });
+
+
+            function addTableRow(row, duplicateUsernames, duplicatePhones) {
+                let tableBody = document.querySelector("#table-body");
+            
+                let tr = document.createElement("tr");
+                tr.setAttribute("data-row-id", row.pk);
+            
+                let tdId = document.createElement("td");
+                tdId.textContent = row.pk;
+                tr.appendChild(tdId);
+            
+                Object.keys(row.fields).forEach(field => {
+                    let td = document.createElement("td");
+                    let value = row.fields[field] || "-";
+            
+                    // ✅ Подсветка дубликатов (Instagram, телефон)
+                    if (field === "instagram_username" && duplicateUsernames.includes(value)) {
+                        td.classList.add("duplicate");
+                        console.log(`🚨 Дубликат Instagram: ${value}`);
+                    }
+                    if (field === "phone_number" && duplicatePhones.includes(value)) {
+                        td.classList.add("duplicate");
+                        console.log(`🚨 Дубликат телефона: ${value}`);
+                    }
+            
+                    // ✅ Логика отображения селектов
+                    if (["status", "contact", "priority"].includes(field)) {
+                        let select = document.createElement("select");
+                        select.classList.add("editable-select");
+                        select.dataset.rowId = row.pk;
+            
+                        let options = {
+                            "status": { "lead": "Лід", "client": "Клієнт", "customer": "Замовник" },
+                            "contact": { "contact_1": "Контакт 1", "contact_2": "Контакт 2", "contact_3": "Контакт 3", "contact_4": "Контакт 4" },
+                            "priority": { "low": "Низький", "medium": "Середній", "high": "Високий" }
+                        };
+            
+                        Object.entries(options[field]).forEach(([value, label]) => {
+                            let opt = document.createElement("option");
+                            opt.value = value;
+                            opt.textContent = label;
+                            if (row.fields[field] === value) opt.selected = true;
+                            select.appendChild(opt);
+                        });
+            
+                        // ✅ Добавляем обработчик изменения
+                        select.addEventListener("change", function () {
+                            updateField(row.pk, field, this.value);
+                        });
+            
+                        td.appendChild(select);
+                    }
+                    // ✅ Форматируем ссылки Instagram
+                    else if (field === "instagram_username") {
+                        let link = document.createElement("a");
+                        link.href = row.fields["instagram_link"] || "#";
+                        link.textContent = value;
+                        link.target = "_blank";
+                        td.appendChild(link);
+                    }
+                    // ✅ Обычные текстовые поля
+                    else {
+                        td.textContent = value;
+                    }
+            
+                    tr.appendChild(td);
+                });
+            
+                // ✅ Кнопки "Редагувати" и "Видалити"
+                let tdActions = document.createElement("td");
+                tdActions.innerHTML = `
+                    <a href="/clients/tables/${document.getElementById("data-table").getAttribute("data-table-id")}/edit/${row.pk}/" class="btn-edit">Редагувати</a>
+                    <button class="btn-delete" data-row-id="${row.pk}">Видалити</button>
+                `;
+                tr.appendChild(tdActions);
+            
+                tableBody.appendChild(tr);
             }
             
             
-    
+            function loadMoreRows() {
+                let tableBody = document.querySelector("#table-body");
+                let loadMoreBtn = document.getElementById("load-more-btn");
+            
+                // ✅ Проверяем, есть ли еще строки для загрузки
+                if (window.loadedRows >= window.allFilteredRows.length) {
+                    loadMoreBtn.style.display = "none"; // ✅ Скрываем кнопку, если всё загружено
+                    return;
+                }
+            
+                // ✅ Загружаем следующие 30 строк
+                let rowsToLoad = window.allFilteredRows.slice(window.loadedRows, window.loadedRows + 30);
+            
+                rowsToLoad.forEach(row => {
+                    addTableRow(row, window.duplicateUsernames, window.duplicatePhones);  // ✅ Передаём ВСЕ дубликаты
+                });
+            
+                // ✅ Обновляем счетчик загруженных строк
+                window.loadedRows += rowsToLoad.length;
+            
+                // ✅ Сохраняем прогресс в `localStorage`
+                localStorage.setItem("loadedRows", window.loadedRows);
+            
+                // ✅ Если строк больше нет, скрываем кнопку
+                if (window.loadedRows >= window.allFilteredRows.length) {
+                    loadMoreBtn.style.display = "none";
+                }
+            }
+            
+            
+
+
             // 🔹 Функция сброса фильтров
             function resetFilter() {
                 console.log("🔄 Сброс фильтров...");
+
+                // ✅ Очищаем localStorage (чтобы загружалось с нуля)
+                localStorage.removeItem("loadedRows");
                 
                 // ✅ Очищаем все поля формы
                 document.querySelectorAll("#filter-form input, #filter-form select").forEach(input => input.value = "");
             
                 // ✅ Убираем фильтры из URL
                 window.history.replaceState({}, "", window.location.pathname);
+
+                // ✅ Скрываем количество строк
+                document.getElementById("filter-results-count").style.display = "none";
             
                 // ✅ Перезагружаем страницу, чтобы загрузились все данные без фильтра
                 location.reload();

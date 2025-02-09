@@ -785,3 +785,111 @@ tr:hover {
 .filtered-row {
     animation: highlightFade 4s infinite alternate ease-in-out;
 }
+
+#filter-results-count {
+    display: block; /* Изначально скрыт */
+    font-size: 2.2rem;
+    font-weight: bold;
+    text-align: center;
+    background: linear-gradient(90deg, #41ffbd, #00f4c7);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 3px 3px 12px rgba(57, 255, 242, 0.6);
+    padding: 15px 30px;
+    border-radius: 20px;
+    box-shadow: 0px 5px 20px rgba(2, 248, 158, 0.5);
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+    transition: opacity 1s ease-out, transform 0.8s ease-out;
+}
+
+/* 🌟 При появлении делает эффект "прыжка" */
+#filter-results-count.show {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    animation: bounceGlow 1.2s ease-out;
+}
+
+/* 🎭 Добавляем пульсацию и легкое свечение */
+@keyframes bounceGlow {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+    }
+    50% {
+        transform: scale(1.05);
+        text-shadow: 0px 0px 30px rgba(111, 255, 0, 0.7);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        text-shadow: 3px 3px 12px rgba(13, 255, 0, 0.6);
+    }
+}
+
+#load-more-btn {
+    display: none;
+    font-size: 1.6rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    color: white;
+    padding: 14px 28px;
+    border: none;
+    
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease-in-out;
+    box-shadow: 0px 6px 18px rgba(0, 114, 255, 0.5);
+    animation: fadeInScale 0.8s ease-in-out forwards;
+    width: 100%;
+    padding: 2rem;
+}
+
+/* 🔥 Добавляем эффект свечения */
+#load-more-btn:hover {
+    background: linear-gradient(135deg, #0072ff, #00c6ff);
+    box-shadow: 0px 10px 25px rgba(0, 114, 255, 0.8);
+    transform: scale(1.07);
+}
+
+/* 💥 Вспышка при наведении */
+#load-more-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 350%;
+    height: 350%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 10%, transparent 70%);
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.6s ease-out;
+}
+
+#load-more-btn:hover::before {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* 💫 Эффект появления кнопки с увеличением */
+@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    80% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* 🚀 Анимация кнопки при нажатии */
+#load-more-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0px 4px 12px rgba(0, 114, 255, 0.7);
+}

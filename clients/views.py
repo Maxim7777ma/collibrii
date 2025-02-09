@@ -44,13 +44,47 @@ import json
 from django import template
 
 
+
+
+
+translations = {
+    "status": {
+        "lead": "Лід",
+        "client": "Клієнт",
+        "customer": "Замовник"
+    },
+    "contact": {
+        "contact_1": "Контакт 1",
+        "contact_2": "Контакт 2",
+        "contact_3": "Контакт 3",
+        "contact_4": "Контакт 4"
+    },
+    "priority": {
+        "low": "Низький",
+        "medium": "Середній",
+        "high": "Високий"
+    }
+}
+
+def your_view(request):
+    context = {
+        "translations": translations,
+        # ... другие данные для шаблона
+    }
+    return render(request, "your_template.html", context)
+
+
+
+
+
 register = template.Library()
 
 @register.filter
 def get_item(dictionary, key):
-    if dictionary is None:
-        return "-"  # Если словарь отсутствует, вернуть дефолтное значение
-    return dictionary.get(key, "-")  # Вернуть значение по ключу или "-"
+    if dictionary and isinstance(dictionary, dict):
+        return dictionary.get(key, "-")  # Безопасный доступ
+    return "-"  # Возвращаем дефолтное значение, если словарь пустой или `None`
+
 
 @csrf_exempt
 def update_field(request, row_id):
@@ -534,6 +568,11 @@ def custom_row_list(request, table_id):
 
     # Получаем таблицу
     table = get_object_or_404(CustomTable, id=table_id)
+    translations = {
+        "status": {"lead": "Лід", "client": "Клієнт", "customer": "Замовник"},
+        "contact": {"contact_1": "Контакт 1", "contact_2": "Контакт 2"},
+        "priority": {"low": "Низький", "medium": "Середній", "high": "Високий"}
+    }
 
     # Загружаем видимые поля (если сохранены как JSON, декодируем)
     if isinstance(table.visible_fields, str):
@@ -627,6 +666,7 @@ def custom_row_list(request, table_id):
         "paginator": paginator,  # ✅ Если пагинация не нужна, передаем None
         "current_page": 1 if paginator else 1,  # Если пагинация отсутствует, делаем страницу 1
         "total_pages": 1 if paginator is None else paginator.num_pages,  # Если пагинация отсутствует, страница одна
+        "translations": translations,  # Добавь в контекст!
     })
 
 
