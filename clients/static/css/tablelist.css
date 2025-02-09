@@ -774,3 +774,14 @@ tr:hover {
         transform: translateX(0);
     }
 }
+
+
+@keyframes highlightFade {
+    0% { background-color: #df95fe; }  /* Постельный синий */
+    50% { background-color: #FCF3CF; } /* Постельный желтый */
+    100% { background-color: #df95fe; } /* Обратно в синий */
+}
+
+.filtered-row {
+    animation: highlightFade 4s infinite alternate ease-in-out;
+}

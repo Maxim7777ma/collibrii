@@ -26,7 +26,7 @@ from django.db.models import Q, Count
 from django.contrib.auth.decorators import login_required
 from .models import Client, CustomTable
 from django.contrib.auth.models import User
-
+from django.utils.timezone import localtime
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Count
 from django.contrib.auth.decorators import login_required
@@ -162,7 +162,12 @@ def delete_table(request, table_id):
 
 @login_required
 def reset_row_filter(request, pk):
-    # Перенаправляем на страницу фильтрации без параметров
+    """
+    Сбрасывает сохраненные фильтры и перенаправляет на страницу списка строк без параметров.
+    """
+    if "filters" in request.session:
+        del request.session["filters"]  # ✅ Удаляем сохраненные фильтры из сессии
+
     return redirect('custom_row_filter', pk=pk)
 
 from django.utils.timezone import make_aware
@@ -171,43 +176,52 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
+@csrf_exempt
 def filter_rows(request, table_pk):
     if request.method == "POST":
         try:
+            # ✅ Декодируем JSON, логируем фильтр
+            try:
+                data = json.loads(request.body.decode("utf-8"))
+                logger.debug(f"📥 Фильтр перед обработкой: {data}")
+            except json.JSONDecodeError as e:
+                logger.error(f"❌ Ошибка парсинга JSON: {str(e)}")
+                return JsonResponse({"success": False, "error": "Некорректный JSON"}, status=400)
+
+            # ✅ Автоматически добавляем @ перед никнеймом
+            if "instagram_username" in data:
+                username = data["instagram_username"].strip()
+                if not username.startswith("@"):
+                    username = "@" + username
+                data["instagram_username"] = username
+
             data = json.loads(request.body)
+            logger.debug(f"📩 Получены данные: {data}")
+
             table = get_object_or_404(CustomTable, pk=table_pk)
             rows = CustomRow.objects.filter(table=table)
 
-            # Получаем локальный часовой пояс Django
-            local_tz = pytz.timezone("Europe/Kyiv")  # 🔥 Укажи свой!
+            disable_pagination = data.pop("disable_pagination", False)
 
-            # Проверяем новые фильтры (start_datetime, end_datetime)
-            start_datetime = data.get("start_datetime")
-            end_datetime = data.get("end_datetime")
+            local_tz = pytz.timezone("Europe/Kyiv")
 
-            def parse_datetime(date_str):
-                """
-                Конвертирует дату из любого формата в datetime с учетом часового пояса.
-                """
+            # ✅ Проверяем, передали ли фильтр `instagram_username`
+            
+            def parse_datetime(date_str, local_tz):
                 if not date_str:
                     return None
-
                 try:
-                    # Проверяем формат YYYY-MM-DDTHH:MM (от input type="datetime-local")
                     if "T" in date_str:
                         parsed_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M")
                     else:
                         parsed_date = datetime.strptime(date_str, "%d-%m-%Y %H:%M")
-                    
                     return make_aware(parsed_date, local_tz).astimezone(pytz.UTC)
                 except ValueError:
                     logger.error(f"Ошибка парсинга даты: {date_str}")
                     return None
 
-            # Применяем фильтрацию по датам
-            start_datetime = parse_datetime(start_datetime)
-            end_datetime = parse_datetime(end_datetime)
+            start_datetime = parse_datetime(data.get("start_datetime"), local_tz)
+            end_datetime = parse_datetime(data.get("end_datetime"), local_tz)
 
             if start_datetime:
                 rows = rows.filter(
@@ -222,27 +236,66 @@ def filter_rows(request, table_pk):
                     models.Q(due_date__lte=end_datetime) |
                     models.Q(record_date__lte=end_datetime)
                 )
-
-            # Оставляем остальные фильтры как есть
+            
             for field, value in data.items():
-                if value and field not in ["start_datetime", "end_datetime"]:
+                logger.debug(f"🧐 Фильтр: {field} = {value}")  # ✅ Выведет все поля перед фильтрацией
+                if field == "instagram_username":
+                        if not value.startswith("@"):  # Добавляем "@", если его нет
+                            value = f"@{value}"
+                        rows = rows.filter(instagram_username__icontains=value)
+                elif field in ["manager", "status", "contact", "priority", "city", "country"]:
                     rows = rows.filter(**{f"{field}__icontains": value})
+                elif field in ["deal_amount", "paid_amount", "expected_profit"]:
+                    try:
+                        value = float(value)
+                        rows = rows.filter(**{f"{field}__gte": value})
+                    except ValueError:
+                        continue
 
-            # Формируем ответ
+            rows = list(rows)
+
+            # 🔥 **Поиск дубликатов**
+            all_rows = CustomRow.objects.filter(table=table)  # ✅ Получаем все строки таблицы
+
+            all_instagram_usernames = [row.instagram_username for row in all_rows if row.instagram_username]
+            all_phone_numbers = [row.phone_number for row in all_rows if row.phone_number]
+
+            # ✅ Дубликаты ищем по всей таблице
+            duplicate_usernames = {username for username in all_instagram_usernames if all_instagram_usernames.count(username) > 1}
+            duplicate_phones = {phone for phone in all_phone_numbers if all_phone_numbers.count(phone) > 1}
+
+            def format_datetime(value):
+                if isinstance(value, datetime):
+                    value = localtime(value)  # Приводим к локальному времени
+                    return value.strftime("%d-%m-%Y %H:%M")
+                return value
+
             filtered_data = []
             for row in rows:
                 row_data = {"pk": row.pk, "fields": {}}
                 for field in table.visible_fields:
                     field_name = field["name"]
-                    field_value = getattr(row, field_name, "-")
+                    field_value = getattr(row, field_name, None)
+
+                    # ✅ Если поле — это дата/время, форматируем
+                    if isinstance(field_value, datetime):
+                        field_value = format_datetime(field_value)
 
                     if isinstance(field_value, models.Manager):
-                        field_value = list(field_value.values_list('id', flat=True))
+                        field_value = list(field_value.values_list("username", flat=True))
 
-                    row_data["fields"][field_name] = field_value
+                    row_data["fields"][field_name] = field_value if field_value is not None else "-"
+    
                 filtered_data.append(row_data)
+            logger.debug(f"📩 Данные перед отправкой: {filtered_data}")
 
-            return JsonResponse({"success": True, "data": filtered_data})
+            return JsonResponse({
+                "success": True,
+                "data": filtered_data,
+                "disable_pagination": True,
+                "duplicate_usernames": list(duplicate_usernames),
+                "duplicate_phones": list(duplicate_phones)
+            })
 
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Некорректный JSON"}, status=400)
@@ -251,7 +304,6 @@ def filter_rows(request, table_pk):
             return JsonResponse({"success": False, "error": str(e)}, status=400)
 
     return JsonResponse({"success": False, "error": "Некорректный запрос!"}, status=400)
-
 
 @csrf_exempt
 @login_required
@@ -511,7 +563,7 @@ def custom_row_list(request, table_id):
     filters = {key: request.GET[key] for key in request.GET if request.GET[key] and key != 'page'}
     query = Q(table=table)
 
-    # Применяем фильтры (например, статус, менеджер и т.д.)
+    # Применяем фильтры
     for key, value in filters.items():
         query &= Q(**{f"{key}__icontains": value})
 
@@ -531,16 +583,17 @@ def custom_row_list(request, table_id):
         ).items() if count > 1
     ]
 
-    # --- 🔹 ПАГИНАЦИЯ (по 20 строк) ---
-    paginator = Paginator(rows, 20)
-    page = request.GET.get("page")
-
-    try:
-        rows = paginator.page(page)
-    except PageNotAnInteger:
-        rows = paginator.page(1)
-    except EmptyPage:
-        rows = paginator.page(paginator.num_pages)
+    # --- 🔹 ПАГИНАЦИЯ (по 20 строк) — ОТКЛЮЧЕНИЕ ПАГИНАЦИИ, ЕСЛИ ФИЛЬТРЫ ПРИМЕНЕНЫ
+    paginator = None
+    if not filters:  # Если фильтры не применены, используем пагинацию
+        paginator = Paginator(rows, 20)
+        page = request.GET.get("page")
+        try:
+            rows = paginator.page(page)
+        except PageNotAnInteger:
+            rows = paginator.page(1)
+        except EmptyPage:
+            rows = paginator.page(paginator.num_pages)
 
     # --- 🔹 ОБРАБОТКА additional_data (JSON поля) ---
     for row in rows:
@@ -563,7 +616,7 @@ def custom_row_list(request, table_id):
     # --- 🔹 ВЫВОД В ШАБЛОН ---
     return render(request, "clients/custom_row_list.html", {
         "table": table,
-        "rows": rows,  # ✅ Теперь отдает только 20 строк (пагинация)
+        "rows": rows,  # ✅ Все строки (если фильтры применены)
         "visible_fields": visible_fields,
         "duplicate_usernames": list(duplicate_usernames),
         "duplicate_phones": list(duplicate_phones),
@@ -571,10 +624,11 @@ def custom_row_list(request, table_id):
         "allowed_fields": allowed_fields,
         "choices": choices,
         "filters": filters,  # ✅ Передаем фильтры в шаблон
-        "paginator": paginator,  # ✅ Объект пагинации
-        "current_page": page,  # ✅ Номер текущей страницы
-        "total_pages": paginator.num_pages,  # ✅ Общее число страниц
+        "paginator": paginator,  # ✅ Если пагинация не нужна, передаем None
+        "current_page": 1 if paginator else 1,  # Если пагинация отсутствует, делаем страницу 1
+        "total_pages": 1 if paginator is None else paginator.num_pages,  # Если пагинация отсутствует, страница одна
     })
+
 
 # === Создание новой таблицы ===
 def custom_table_create(request):
