@@ -6,6 +6,12 @@ body {
     padding: 20px;
 }
 
+.actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
 h1 {
     text-align: center;
     margin-bottom: 20px;
@@ -158,5 +164,101 @@ tr.duplicate {
     }
     100% {
         background-color: #ffe6e6;
+    }
+}
+
+
+/* 📱 Адаптивность для планшетов */
+@media (max-width: 1024px) {
+    h1 {
+        font-size: 26px;
+        text-align: center;
+    }
+
+    .filter-form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-form input, 
+    .filter-form select, 
+    .filter-form button {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .btn-add, .btn-edit, .btn-delete, .btn-main {
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+        font-size: 16px;
+        padding: 12px;
+    }
+}
+
+/* 📱 Адаптивность для телефонов */
+@media (max-width: 768px) {
+    table {
+        font-size: 14px;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    th, td {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .btn-add, .btn-edit, .btn-delete, .btn-main {
+        font-size: 14px;
+        padding: 10px;
+        max-width: 350px;
+    }
+}
+
+/* 📱 Адаптивность для маленьких телефонов */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 22px;
+    }
+
+    table {
+        font-size: 12px;
+        display: block;
+        overflow-x: auto;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+
+    .btn-add, .btn-edit, .btn-delete, .btn-main {
+        font-size: 14px;
+        padding: 10px;
+        max-width: 300px;
+    }
+}
+
+/* 📱 Адаптивность для очень маленьких экранов */
+@media (max-width: 360px) {
+    h1 {
+        font-size: 18px;
+    }
+
+    .btn-add, .btn-edit, .btn-delete, .btn-main {
+        font-size: 12px;
+        padding: 6px;
+        max-width: 280px;
+    }
+
+    table {
+        font-size: 10px;
+    }
+
+    th, td {
+        padding: 6px;
     }
 }

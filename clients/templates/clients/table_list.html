@@ -29,12 +29,14 @@
                 <td>{{ table.description }}</td>
                 <td>{{ table.created_at }}</td>
                 <td>
+                <div class="actions">    
                     <a href="{% url 'custom_row_list' table.id %}" class="btn-edit">Открыть</a>
                     <a href="{% url 'custom_table_edit' table.id %}" class="btn-edit">Редактировать</a>
                     <form action="{% url 'custom_table_delete' table.id %}" method="POST" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn-delete">Удалить</button>
                     </form>
+                </div>
                 </td>
             </tr>
             {% empty %}
