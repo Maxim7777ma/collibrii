@@ -53,7 +53,7 @@ nav ul li a:hover {
     }
 }
 
-.btn-see, .btn-add, .btn-info, .btn-features, .btn-contact, .btn-logout {
+.btn-see, .btn-add, .btn-info, .btn-features, .btn-contact, .btn-logout, .btn-analysis {
     animation: float 4s ease-in-out infinite;
 }
 

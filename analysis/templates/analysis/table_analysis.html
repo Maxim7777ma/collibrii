@@ -1,0 +1,120 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализ {{ table.name }}</title>
+    <link rel="stylesheet" href="{% static 'css/analysistebles.css' %}">
+</head>
+<body>
+    <h1>Анализ данных таблицы: {{ table.name }}</h1>
+
+    <h2>Фильтры</h2>
+    <form method="GET">
+        <label>Статус:
+            <select name="status">
+                <option value="">Все</option>
+                <option value="lead" {% if filters.status == "lead" %}selected{% endif %}>Лид</option>
+                <option value="client" {% if filters.status == "client" %}selected{% endif %}>Клиент</option>
+                <option value="customer" {% if filters.status == "customer" %}selected{% endif %}>Заказчик</option>
+            </select>            
+        </label>
+
+        <label>Контакт:
+            <select name="contact">
+                <option value="">Все</option>
+                <option value="contact_1">Контакт 1</option>
+                <option value="contact_2">Контакт 2</option>
+                <option value="contact_3">Контакт 3</option>
+                <option value="contact_4">Контакт 4</option>
+            </select>
+        </label>
+
+        <label>Приоритет:
+            <select name="priority">
+                <option value="">Все</option>
+                <option value="low" {% if filters.priority == "low" %}selected{% endif %}>Низкий</option>
+                <option value="medium" {% if filters.priority == "medium" %}selected{% endif %}>Средний</option>
+                <option value="high" {% if filters.priority == "high" %}selected{% endif %}>Высокий</option>
+            </select>            
+        </label>
+
+        <label>Менеджер:
+            <select name="manager">
+                <option value="">Все</option>
+                {% for manager in managers %}
+                    {% if manager %}
+                        <option value="{{ manager }}" {% if filters.manager == manager %}selected{% endif %}>{{ manager }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>            
+        </label>
+        
+        
+
+        <label>Телефон:
+            <input type="text" name="phone_number" value="{{ filters.phone_number }}" placeholder="Введите телефон">
+        </label>
+
+        <label>Сумма сделки (от - до):
+            <input type="number" name="min_deal" value="{{ filters.min_deal }}" placeholder="Мин">
+            <input type="number" name="max_deal" value="{{ filters.max_deal }}" placeholder="Макс">
+        </label>
+
+        <label>Валюта:
+            <select name="deal_currency">
+                <option value="">Все</option>
+                <option value="UAH" {% if filters.deal_currency == "UAH" %}selected{% endif %}>UAH</option>
+                <option value="USD" {% if filters.deal_currency == "USD" %}selected{% endif %}>USD</option>
+                <option value="EUR" {% if filters.deal_currency == "EUR" %}selected{% endif %}>EUR</option>
+            </select>            
+        </label>
+
+        <label>Дата (от - до):
+            <input type="date" name="start_date" value="{{ filters.start_date }}">
+            <input type="date" name="end_date" value="{{ filters.end_date }}">            
+        </label>
+
+        <button type="submit">Применить</button>
+    </form>
+
+    <h3>Общая статистика по менеджерам</h3>
+    <ul>
+        {% for manager in manager_stats_total %}
+            <li>{{ manager.manager }}: {{ manager.total_clients }} клиентов, сумма сделок: {{ manager.total_deal_amount|default:0 }}</li>
+        {% empty %}
+            <li>Нет данных</li>
+        {% endfor %}
+    </ul>
+
+
+    <h2>Сравнение менеджеров</h2>
+    <table>
+        <tr>
+            <th>Менеджер</th>
+            <th>Клиентов</th>
+            <th>Общая сумма сделок</th>
+        </tr>
+        {% for manager in manager_stats_filtered %}
+            <tr {% if selected_manager_stats and selected_manager_stats.manager == manager.manager %}style="background-color: yellow;"{% endif %}>
+                <td>{{ manager.manager }}</td>
+                <td>{{ manager.total_clients }}</td>
+                <td>{{ manager.total_deal_amount|default:0 }}</td>
+            </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3">Нет данных</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    {% if selected_manager_stats %}
+    <h3>Выбранный менеджер: {{ selected_manager_stats.manager }}</h3>
+    <p>Количество клиентов: {{ selected_manager_stats.total_clients }}</p>
+    <p>Общая сумма сделок: {{ selected_manager_stats.total_deal_amount|default:0 }}</p>
+    {% endif %}
+
+    <a href="{% url 'analysis_dashboard' %}" class="btn-back">Назад</a>
+</body>
+</html>

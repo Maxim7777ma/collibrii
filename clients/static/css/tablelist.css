@@ -897,6 +897,101 @@ tr:hover {
 
 
 
+
+
+
+/* 📊 Блок статистики загрузки */
+.upload-summary {
+    background: rgba(240, 248, 255, 0.2);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(150, 170, 200, 0.15);
+    margin-top: 20px;
+    text-align: center;
+    font-size: 1rem;
+    color: #333;
+    animation: fadeIn 1.2s ease-in-out forwards;
+}
+
+/* Заголовок блока статистики */
+.upload-summary-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #5a72a7;
+    text-align: center;
+    margin-top: 20px;
+    text-shadow: 0px 3px 8px rgba(90, 114, 167, 0.2);
+    opacity: 0;
+    animation: fadeInDown 0.8s ease-in-out forwards;
+}
+
+/* Строки статистики */
+.upload-summary p {
+    margin: 8px 0;
+    font-weight: 600;
+}
+
+/* Числовые значения */
+.upload-summary span {
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* Статусы с разными цветами */
+#total-rows {
+    color: #17a2b8; /* Бирюзовый */
+}
+
+#duplicate-rows {
+    color: #ff4500; /* Оранжевый */
+}
+
+#uploaded-rows {
+    color: #28a745; /* Зеленый */
+}
+
+#updated-rows {
+    color: #ffcc00; /* Желтый */
+}
+
+#deleted-rows {
+    color: #dc3545; /* Красный */
+}
+
+#processing-time {
+    color: #6c757d; /* Серый */
+}
+
+#upload-time {
+    color: #007bff; /* Синий */
+}
+
+/* 📊 Медиа-запросы для адаптивности */
+@media (max-width: 768px) {
+    .upload-summary {
+        font-size: 0.9rem;
+        padding: 12px;
+    }
+    
+    .upload-summary-title {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .upload-summary {
+        font-size: 0.85rem;
+        padding: 10px;
+    }
+    
+    .upload-summary-title {
+        font-size: 18px;
+    }
+}
+
+
+
+
 /* 📱 Адаптация под мобильные устройства */
 @media (max-width: 1024px) {
     body {

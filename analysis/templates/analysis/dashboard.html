@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализ клиентов</title>
+    <link rel="stylesheet" href="{% static 'css/analysis.css' %}">
+</head>
+<body>
+    <h1>Выберите таблицу для анализа</h1>
+    {% if tables %}
+        <ul>
+            {% for table in tables %}
+                <li>
+                    <a href="{% url 'table_analysis' table.id %}" class="btn-table">{{ table.name }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p style="color: red;">⚠ Нет доступных таблиц в базе данных!</p>
+    {% endif %}
+    <a href="{% url 'main_dashboard' %}" class="btn-back">Назад</a>
+</body>
+</html>

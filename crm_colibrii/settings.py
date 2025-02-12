@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'clients',
+    'analysis',
 ]
 
 MIDDLEWARE = [
@@ -134,4 +135,7 @@ LOGOUT_REDIRECT_URL = '/login/'  # Переход после выхода
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 🔥 Увеличиваем лимит полей в POST-запросах
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # Установи большое значение
+DATA_UPLOAD_MAX_NUMBER_FIELDS =70000  # Установи большое значение
+
+
+# пароль для mysql root : Maxim7777ma

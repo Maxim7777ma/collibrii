@@ -298,6 +298,7 @@ def filter_rows(request, table_pk):
             duplicate_usernames = {username for username in all_instagram_usernames if all_instagram_usernames.count(username) > 1}
             duplicate_phones = {phone for phone in all_phone_numbers if all_phone_numbers.count(phone) > 1}
 
+
             def format_datetime(value):
                 if isinstance(value, datetime):
                     value = localtime(value)  # Приводим к локальному времени
@@ -328,7 +329,7 @@ def filter_rows(request, table_pk):
                 "data": filtered_data,
                 "disable_pagination": True,
                 "duplicate_usernames": list(duplicate_usernames),
-                "duplicate_phones": list(duplicate_phones)
+                "duplicate_phones": list(duplicate_phones),
             })
 
         except json.JSONDecodeError:
@@ -570,7 +571,7 @@ def custom_row_list(request, table_id):
     table = get_object_or_404(CustomTable, id=table_id)
     translations = {
         "status": {"lead": "Лід", "client": "Клієнт", "customer": "Замовник"},
-        "contact": {"contact_1": "Контакт 1", "contact_2": "Контакт 2"},
+        "contact": {"contact_1": "Контакт 1", "contact_2": "Контакт 2", "contact_3": "Контакт 3", "contact_4": "Контакт 4"},
         "priority": {"low": "Низький", "medium": "Середній", "high": "Високий"}
     }
 
@@ -931,13 +932,24 @@ def main_dashboard(request):
     })
 
 
-
 logger = logging.getLogger(__name__)
+
+# 🔹 Словарь перевода значений контактов
+CONTACT_TRANSLATIONS = {
+    "Контакт 1": "contact_1",
+    "Контакт 2": "contact_2",
+    "Контакт 3": "contact_3",
+    "Контакт 4": "contact_4"
+}
+
+# 🔹 Приоритет контактов (где 4 – самый высокий, 1 – самый низкий)
+CONTACT_PRIORITY = {"contact_1": 1, "contact_2": 2, "contact_3": 3, "contact_4": 4}
 
 @csrf_exempt
 def upload_excel(request, table_pk):
     """
-    Функция загрузки Excel-файла в таблицу CustomTable.
+    Функция загрузки Excel-файла в таблицу CustomTable с автоматическим удалением дубликатов
+    и оставлением только самой приоритетной записи.
     """
     table = get_object_or_404(CustomTable, pk=table_pk)
 
@@ -946,7 +958,7 @@ def upload_excel(request, table_pk):
             uploaded_file = request.FILES["file"]
             df = pd.read_excel(uploaded_file, dtype=str, keep_default_na=False)  # Читаем Excel
 
-            # ✅ Проверяем заголовки и переводим их в правильный формат
+            # ✅ Проверяем заголовки
             print("Оригинальные заголовки:", df.columns.tolist())
 
             if "FIELD_TRANSLATIONS" in globals():
@@ -970,35 +982,93 @@ def upload_excel(request, table_pk):
 
             print("Финальные колонки:", df.columns.tolist())
 
+            # ✅ Перевод значений контактов
+            if "contact" in df.columns:
+                df["contact"] = df["contact"].map(CONTACT_TRANSLATIONS).fillna(df["contact"])
+
             # ✅ Проверяем, есть ли загружаемые данные
             if df.empty:
-                messages.error(request, "Ошибка: Файл не содержит данных для загрузки!")
-                return redirect("custom_row_list", table_id=table_pk)
+                return JsonResponse({"success": False, "error": "Файл не содержит данных для загрузки!"})
 
-            # ✅ Добавляем строки в базу
-            new_entries = []
+            # ✅ Загружаем существующие данные из БД
+            existing_rows = CustomRow.objects.filter(table=table).values("id", "instagram_username", "phone_number", "contact")
+            
+            existing_dict = {}  # Храним уже существующие записи
+            for row in existing_rows:
+                key = row["instagram_username"] or row["phone_number"]
+                if key:
+                    if key not in existing_dict:
+                        existing_dict[key] = []
+                    existing_dict[key].append((row["id"], row["contact"]))
+
+            # ✅ Группируем дубликаты
+            duplicates = {}
             for _, row in df.iterrows():
                 row_data = row.to_dict()
+                key = row_data.get("instagram_username") or row_data.get("phone_number")
 
-                # Если additional_data есть, сохраняем как JSON
-                row_data["additional_data"] = json.dumps(row_data)
+                if key:
+                    if key not in duplicates:
+                        duplicates[key] = []
+                    duplicates[key].append(row_data)
 
-                new_entries.append(CustomRow(table=table, **row_data))
+            # ✅ Оставляем только самую приоритетную запись
+            new_entries = []
+            to_delete = []
 
-            # ✅ Массовая загрузка
+            for key, entries in duplicates.items():
+                best_entry = max(entries, key=lambda x: CONTACT_PRIORITY.get(x.get("contact"), 0))
+
+                if key in existing_dict:
+                    to_delete.extend([r[0] for r in existing_dict[key]])
+
+                best_entry["additional_data"] = json.dumps(best_entry)
+                new_entries.append(CustomRow(table=table, **best_entry))
+
+            # ✅ Удаляем устаревшие записи
+            if to_delete:
+                CustomRow.objects.filter(id__in=to_delete).delete()
+                print(f"🗑️ Удалено {len(to_delete)} записей с меньшим приоритетом.")
+
+            # ✅ Загружаем новые записи
             CustomRow.objects.bulk_create(new_entries)
 
-            print("✅ Загружено записей:", len(new_entries))  # Проверяем, сколько реально загружено
+            print(f"✅ Загружено {len(new_entries)} новых записей.")
 
-            messages.success(request, f"Успешно загружено {len(new_entries)} записей!")
-            return redirect("custom_row_list", table_id=table_pk)
+            # ✅ Общее количество строк в файле
+            total_rows = len(df)
 
+            # ✅ Количество дубликатов (только те, что уже были в БД)
+            duplicate_rows = len(to_delete)
+
+            # ✅ Количество успешно загруженных новых записей
+            uploaded_rows = len(new_entries)
+
+            # ✅ Количество обновлённых записей (если заменяли на более приоритетные)
+            updated_rows = len(to_delete) - len(new_entries)
+
+            # ✅ Количество удалённых записей (только те, что не обновились)
+            deleted_rows = duplicate_rows - updated_rows
+
+
+            # ✅ Логируем статистику
+            print(f"📊 Статистика: Всего: {total_rows}, Дубликаты: {duplicate_rows}, Загружено: {uploaded_rows}, Обновлено: {updated_rows}, Удалено: {deleted_rows}")
+
+            # ✅ JSON-ответ для фронта
+            return JsonResponse({
+                "success": True,
+                "total_rows": total_rows,        
+                "duplicate_rows": duplicate_rows, 
+                "uploaded_rows": uploaded_rows,   
+                "updated_rows": updated_rows,    
+                "deleted_rows": deleted_rows,    
+            })
+        
         except Exception as e:
-            messages.error(request, f"Ошибка загрузки: {str(e)}")
-            return redirect("custom_row_list", table_id=table_pk)
+            logger.error(f"Ошибка загрузки: {str(e)}")
+            return JsonResponse({"success": False, "error": str(e)})
 
-    messages.error(request, "Ошибка: Некорректный запрос!")
-    return redirect("custom_row_list", table_id=table_pk)
+    return JsonResponse({"success": False, "error": "Некорректный запрос!"})
 
 @csrf_exempt
 def resolve_duplicate(request, table_pk):

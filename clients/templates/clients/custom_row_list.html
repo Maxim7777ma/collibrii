@@ -63,7 +63,7 @@
     <h2 class="excel-title">📂 Завантаження Excel</h2>
 
     <!-- Форма для загрузки файла -->
-    <form action="{% url 'upload_excel' table.id %}" method="POST" enctype="multipart/form-data" class="excel-upload-form">
+    <form id="upload-form" action="{% url 'upload_excel' table.id %}" method="POST" enctype="multipart/form-data" class="excel-upload-form">
         {% csrf_token %}
         <input type="file" name="file" accept=".xls,.xlsx" required class="file-input">
         <button type="submit" class="upload-btn">📤 Завантажити</button>
@@ -81,6 +81,19 @@
     <hr class="divider">
     
     <!-- Блок с дубликатами -->
+     <!-- 📊 Блок статистики загрузки -->
+    <h2 class="upload-summary-title">📊 Підсумки завантаження</h2>
+    <div class="upload-summary">
+            <p><strong>📂 Загальне число записів у файлі:</strong> <span id="total-rows">0</span></p>
+            <p><strong>⚠ Знайдено дублікатів:</strong> <span id="duplicate-rows">0</span></p>
+            <p><strong>✅ Успішно завантажено:</strong> <span id="uploaded-rows">0</span></p>
+            <p><strong>🔄 Оновлені записи:</strong> <span id="updated-rows">0</span></p>
+            <p><strong>🗑 Видалені записи:</strong> <span id="deleted-rows">0</span></p>
+            <p><strong>⏳ Час обробки:</strong> <span id="processing-time">0 сек.</span></p>
+            <p><strong>📅 Дата завантаження:</strong> <span id="upload-time">-</span></p>
+    </div>
+    
+
     
     <h2 class="duplicate-title"> Знайдені дублікати</h2>
     
@@ -725,40 +738,49 @@
     
 <script>
     document.getElementById("upload-form").addEventListener("submit", function(event) {
-        event.preventDefault(); // ❌ Останавливаем обновление страницы
+        event.preventDefault(); // ❌ Останавливаем стандартное поведение формы
     
         let formData = new FormData(this);
-        let tableId = document.getElementById("data-table").dataset.tableId; // ✅ Получаем ID таблицы
-        
+        let tableId = document.getElementById("data-table").dataset.tableId;
+    
         console.log("📤 Отправляем файл:", formData.get("file"));
     
-        fetch(`/clients/tables/${tableId}/upload-excel/`, { // ✅ Исправленный URL
+        let startTime = Date.now();
+    
+        fetch(`/clients/tables/${tableId}/upload-excel/`, {
             method: "POST",
-            body: formData, // ✅ Передаем файл в FormData
+            body: formData,
             headers: {
-                "X-CSRFToken": getCSRFToken() // ✅ Добавляем CSRF-токен
+                "X-CSRFToken": getCSRFToken()
             }
         })
-        .then(response => response.text())  // ✅ Проверяем, что приходит от сервера
-        .then(text => {
-            console.log("📩 Ответ сервера (сырые данные):", text);
-            if (!text.trim()) throw new Error("❌ Сервер вернул пустой ответ!");
-            return JSON.parse(text);  // ✅ Только если JSON корректный
-        })
+        .then(response => response.json()) // ✅ Теперь обрабатываем JSON-ответ
         .then(data => {
             console.log("✅ JSON-данные:", data);
+    
             if (data.success) {
-                displayDuplicates(data.duplicates);
-                displayNewEntries(data.new_entries);
+                // ✅ Обновляем статистику на странице
+               
+                document.getElementById("total-rows").textContent = data.total_rows;
+                document.getElementById("duplicate-rows").textContent = data.duplicate_rows;
+                document.getElementById("uploaded-rows").textContent = data.uploaded_rows;
+                document.getElementById("updated-rows").textContent = Math.max(0, data.updated_rows);
+                document.getElementById("deleted-rows").textContent = Math.max(0, data.deleted_rows);
+                document.getElementById("processing-time").textContent = `${((Date.now() - startTime) / 1000).toFixed(2)} сек.`;
+                document.getElementById("upload-time").textContent = new Date().toLocaleString("uk-UA");
+
+    
+                alert("✅ Файл успешно загружен!");
             } else {
-                alert("❌ Помилка: " + data.error);
+                alert("❌ Ошибка загрузки: " + data.error);
             }
         })
         .catch(error => {
             console.error("❌ Ошибка:", error);
-            alert("⚠ Помилка при завантаженні: " + error.message);
+            alert("⚠ Ошибка загрузки: " + error.message);
         });
     });
+        
     
     
     function resolveDuplicate(existing_id, new_data, action) {
