@@ -85,7 +85,6 @@
     <h2 class="upload-summary-title">📊 Підсумки завантаження</h2>
     <div class="upload-summary">
             <p><strong>📂 Загальне число записів у файлі:</strong> <span id="total-rows">0</span></p>
-            <p><strong>⚠ Знайдено дублікатів:</strong> <span id="duplicate-rows">0</span></p>
             <p><strong>✅ Успішно завантажено:</strong> <span id="uploaded-rows">0</span></p>
             <p><strong>🔄 Оновлені записи:</strong> <span id="updated-rows">0</span></p>
             <p><strong>🗑 Видалені записи:</strong> <span id="deleted-rows">0</span></p>
@@ -762,7 +761,7 @@
                 // ✅ Обновляем статистику на странице
                
                 document.getElementById("total-rows").textContent = data.total_rows;
-                document.getElementById("duplicate-rows").textContent = data.duplicate_rows;
+                
                 document.getElementById("uploaded-rows").textContent = data.uploaded_rows;
                 document.getElementById("updated-rows").textContent = Math.max(0, data.updated_rows);
                 document.getElementById("deleted-rows").textContent = Math.max(0, data.deleted_rows);

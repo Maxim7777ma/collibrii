@@ -176,6 +176,10 @@ class CustomRow(models.Model):
         default=False, 
         verbose_name="Ручное изменение"
     )
+    class Meta:
+        permissions = [
+            ('can_update_manually', 'Может изменять manually_updated'),
+        ]
 
     def __str__(self):
         return f"{self.name} - {self.table.name}"

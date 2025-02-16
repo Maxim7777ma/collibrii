@@ -1,4 +1,6 @@
 {% load static %}
+
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -149,16 +151,25 @@
                id="id_inquiry_date" class="form-control">
     </p>
          <!-- Поле manually_updated -->
-    <div class="field-manually_updated">
-        {{ form.manually_updated.label_tag }}
-        {{ form.manually_updated }}
-    </div>
+    {% if user.is_superuser or perms.clients.can_update_manually %}
+         <div class="field-manually_updated">
+            <label for="id_manually_updated">Ручне змінення:</label>
+             {{ form.manually_updated }}
+         </div>
+    {% endif %}
 
     <!-- Поле updated_by (скрыто по умолчанию) -->
-    <div class="field-updated_by" style="display: none;">
+    <div class="field-updated_by french-style hidden">
         {{ form.updated_by.label_tag }}
         {{ form.updated_by }}
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            setTimeout(() => {
+                document.querySelector(".field-updated_by").classList.add("show");
+            }, 800);
+        });
+    </script>
 
        
         <!-- Кнопки -->

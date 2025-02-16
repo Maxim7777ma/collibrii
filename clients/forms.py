@@ -131,6 +131,8 @@ class CustomRowForm(forms.ModelForm):
         additional_data = {}
         print(f"📅 Загруженная initial record_date: {self.fields['record_date'].initial}")
 
+        if not user.has_perm('app_name.can_update_manually'):
+            self.fields.pop('manually_updated', None)  # Убираем поле из формы
         
           # Определяем QuerySet для поля `updated_by`
         if table and table.group:
