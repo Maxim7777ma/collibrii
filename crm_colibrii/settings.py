@@ -77,8 +77,16 @@ WSGI_APPLICATION = 'crm_colibrii.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'crm_colibri',  # Имя твоей базы данных
+        'USER': 'root',         # Пользователь MySQL
+        'PASSWORD': 'Maxim7777ma',  # Твой пароль MySQL
+        'HOST': 'localhost',    # Хост, где работает MySQL
+        'PORT': '3306',         # Порт MySQL (обычно 3306)
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+        },
     }
 }
 

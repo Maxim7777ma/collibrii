@@ -18,7 +18,7 @@ h1 {
 }
 
 /* Кнопки */
-.btn-add, .btn-cancel, .btn-edit, .btn-delete {
+.btn-add, .btn-cancel, td .btn-edit , .btn-delete {
     padding: 10px 15px;
     margin: 10px 5px;
     border: none;
@@ -98,12 +98,12 @@ h1 {
 }
 
 /* Кнопка "Редактировать" */
-.btn-edit {
+td .btn-edit  {
     background-color: #ffa500;
     color: white;
 }
 
-.btn-edit:hover {
+td .btn-edit :hover {
     background-color: #e69500;
     transform: translateY(-3px);
 }
@@ -133,10 +133,31 @@ th, td {
     border: 1px solid #ddd;
     text-align: left;
 }
-td a{
-    color: rgb(0, 0, 0);
+#a_class {
+    width: 100%;
+    height: 100%;
+    color: rgb(255, 255, 255);
     text-decoration: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 0px 0px 0px #ffffff, -1px 0px 7px rgb(0, 0, 0);
+    letter-spacing: 1.5px;
+    background: linear-gradient(90deg, #d10000, #00000000);
+    -webkit-text-fill-color: transparent;
+    padding: 10px 10px;
+    border-radius: 8px;
+    display: inline-block;
+    transition: transform 0.3s ease-in-out, text-shadow 0.3s ease-in-out;
+    cursor: pointer;
 }
+
+/* Анимация при наведении */
+#a_class:hover {
+    transform: scale(1.05);
+    text-shadow: 3px 3px 0px #000, 5px 5px 15px rgba(209, 0, 0, 0.7);
+}
+
 /* Заголовок таблицы */
 th {
     background-color: #6a82fb;
@@ -154,10 +175,17 @@ tr:hover {
     background-color: #e6f7ff;
     cursor: pointer;
 }
+
+a{
+    text-decoration: none;
+    color: black;
+}
+
 .duplicate {
     animation: colorBlink 1.5s infinite; /* Анимация цвета */
     text-decoration: none; /* Убираем подчеркивание */
     font-weight: bold; /* Можно сделать текст жирным */
+    background: repeating-linear-gradient(45deg, #000000, transparent 100px);
 }
 
 /* Анимация смены цвета */
@@ -197,7 +225,7 @@ tr:hover {
         font-size: 0.9rem;
     }
 
-    .btn-add, .btn-cancel, .btn-edit, .btn-delete {
+    .btn-add, .btn-cancel, td .btn-edit , .btn-delete {
         padding: 8px 10px;
         font-size: 0.9rem;
     }
@@ -1002,7 +1030,7 @@ tr:hover {
         font-size: 24px;
     }
 
-    .btn-add, .btn-cancel, .btn-edit, .btn-delete {
+    .btn-add, .btn-cancel, td .btn-edit , .btn-delete {
         padding: 10px;
         font-size: 1rem;
     }
@@ -1219,4 +1247,190 @@ tr:hover {
         font-size: 1rem;
         padding: 10px 16px;
     }
+}
+.editable-select{
+    display: inline-block;
+    position: relative;
+    width: 100px;
+    max-width: 250px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    background: none;
+    border: none;
+    color: #000;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out, transform 0.2s ease;
+    position: relative;
+    border-radius: 2rem;
+}
+
+/* Анимация при наведении */
+.editable-select:hover {
+    border-color: #000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Анимация при фокусе */
+.editable-select:focus {
+    border-color: #000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transform: scale(1.02);
+}
+
+/* Кастомная стрелка */
+.editable-select {
+    background-image: linear-gradient(45deg, transparent 50%, #000 50%),
+                      linear-gradient(135deg, #000 50%, transparent 50%);
+    background-position: calc(100% - 20px) center, calc(100% - 15px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+/* Стилизация опций */
+.editable-select option {
+    padding: 12px;
+    background: none;
+    color: #000;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+/* Анимация при наведении на option */
+.editable-select option:hover {
+    background: #000;
+    color: #fff;
+}
+
+/* Стилизация выбранного элемента */
+.editable-select option:checked {
+    background: #000;
+    color: #fff;
+}
+
+
+.editable-select.contact-select {
+    width: 100px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    background: none;
+    border: none; /* Красная рамка */
+    color: #000;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out, transform 0.2s ease;
+    position: relative;
+    border-radius: 2rem;
+}
+
+/* Анимация при наведении */
+.editable-select.contact-select:hover {
+    border-color: #000;
+    box-shadow: 0 0 10px rgba(209, 0, 0, 0.3);
+}
+
+/* Анимация при фокусе */
+.editable-select.contact-select:focus {
+    border-color: #d10000;
+    border-radius: 2rem;
+    box-shadow: 0 0 10px rgba(209, 0, 0, 0.5);
+    transform: scale(1.02);
+}
+
+/* Кастомная стрелка */
+.editable-select.contact-select {
+    background-image: linear-gradient(45deg, transparent 50%, #d10000 50%),
+                      linear-gradient(135deg, #d10000 50%, transparent 50%);
+    background-position: calc(100% - 20px) center, calc(100% - 15px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+/* Стилизация опций */
+.editable-select.contact-select option {
+    padding: 12px;
+    background: none;
+    color: #000;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(209, 0, 0, 0.2);
+    transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+/* Анимация при наведении на option */
+.editable-select.contact-select option:hover {
+    background: #d10000;
+    color: #fff;
+}
+
+/* Стилизация выбранного элемента */
+.editable-select.contact-select option:checked {
+    background: #d10000;
+    color: #fff;
+}
+
+
+
+.editable-select.status-select {
+    width: 100px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    background: none;
+    border: none; /* Черная рамка вместо красной */
+    color: #000000;
+    border-radius: 2rem;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out, transform 0.2s ease-in-out;
+    position: relative;
+}
+
+/* Анимация при наведении */
+.editable-select.status-select:hover {
+    border-color: #d10000;
+    box-shadow: 0 0 10px rgba(209, 0, 0, 0.3);
+}
+
+/* Анимация при фокусе */
+.editable-select.status-select:focus {
+    border-color: #000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transform: scale(1.03);
+}
+
+/* Кастомная стрелка */
+.editable-select.status-select {
+    background-image: linear-gradient(45deg, transparent 50%, #ff0000 50%),
+                      linear-gradient(135deg, #ff0000 50%, transparent 50%);
+    background-position: calc(100% - 20px) center, calc(100% - 15px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+/* Стилизация опций */
+.editable-select.status-select option {
+    padding: 12px;
+    background: #fff;
+    color: #000;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+    transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+/* Анимация при наведении на option */
+.editable-select.status-select option:hover {
+    background: #000;
+    color: #fff;
+}
+
+/* Стилизация выбранного элемента */
+.editable-select.status-select option:checked {
+    background: #d10000;
+    color: #fff;
 }
