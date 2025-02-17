@@ -57,12 +57,13 @@
             <input type="text" name="phone_number" value="{{ filters.phone_number }}" placeholder="Введите телефон">
         </label>
 
+        <div class="deal_block">
         <label>Сумма сделки (от - до):
             <input type="number" name="min_deal" value="{{ filters.min_deal }}" placeholder="Мин">
             <input type="number" name="max_deal" value="{{ filters.max_deal }}" placeholder="Макс">
         </label>
 
-        <label>Валюта:
+        <label class="deal_currency_ua">Валюта:
             <select name="deal_currency">
                 <option value="">Все</option>
                 <option value="UAH" {% if filters.deal_currency == "UAH" %}selected{% endif %}>UAH</option>
@@ -70,6 +71,7 @@
                 <option value="EUR" {% if filters.deal_currency == "EUR" %}selected{% endif %}>EUR</option>
             </select>            
         </label>
+        </div>
 
         <label>Дата (от - до):
             <input type="date" name="start_date" value="{{ filters.start_date }}">

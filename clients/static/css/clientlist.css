@@ -1,21 +1,21 @@
 /* Улучшенные стили для таблицы клиентов */
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #ffffff 0%, #ccd5fa 100%);
+    background: linear-gradient(135deg, #000000 0%, #03081b 100%);
     margin: 0;
     padding: 20px;
 }
 
 .actions {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+        flex-wrap: wrap;
 }
 h1 {
     text-align: center;
     margin-bottom: 20px;
-    color: #333;
+    color: #ffffff;
     font-size: 28px;
     font-weight: 700;
 }
@@ -73,17 +73,17 @@ th, td {
 }
 
 th {
-    background-color: #6a82fb;
-    color: white;
+    background-color: #ff0000;
+    color: rgb(0, 0, 0);
     font-weight: bold;
 }
 
 tr:nth-child(even) {
-    background-color: #f2f2f2;
+    background-color: #000000;
 }
 
 tr:hover {
-    background-color: #e6f7ff;
+    background-color: #ff0000;
     cursor: pointer;
 }
 
@@ -107,22 +107,22 @@ tr.duplicate {
 }
 
 .btn-add {
-    background-color: #4caf50;
-    color: white;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
 }
 
 .btn-add:hover {
-    background-color: #45a049;
+    background-color: #bebebe;
     transform: translateY(-3px);
 }
 
 .btn-edit {
-    background-color: #ffa500;
-    color: white;
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
 }
 
 .btn-edit:hover {
-    background-color: #e69500;
+    background-color: #b8b7b4;
     transform: translateY(-3px);
 }
 
@@ -137,12 +137,12 @@ tr.duplicate {
 }
 
 .btn-main {
-    background-color: #6a82fb;
-    color: white;
+    background-color: #f13737;
+    color: rgb(0, 0, 0);
 }
 
 .btn-main:hover {
-    background-color: #4a69bd;
+    background-color: #910000;
     transform: translateY(-3px);
 }
 
@@ -261,4 +261,8 @@ tr.duplicate {
     th, td {
         padding: 6px;
     }
+}
+
+td{
+    color:white ;
 }

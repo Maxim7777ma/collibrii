@@ -11,8 +11,14 @@
 <body>
     <h1>Список строк таблиці: {{ table.name }}</h1>
 
-    <!-- Фильтр -->
-    <button class="filter-toggle-btn" id="toggle-filters">Показати фільтри</button>
+    
+    <!-- Кнопки навигации -->
+    <div class="actions">
+        <!-- Фильтр -->
+        <button class="filter-toggle-btn" id="toggle-filters">Показати фільтри</button>
+        <a href="{% url 'add_row' table.id %}" class="btn-add">Додати рядок</a>
+        <a href="{% url 'custom_table_list' %}" class="btn-back">Назад до таблиць</a>
+    </div>
     <div id="filter-container" class="filter-container">
         <h3>Фільтр</h3>
         <form id="filter-form" method="POST">
@@ -55,11 +61,7 @@
     </div>
 
 
-    <!-- Кнопки навигации -->
-    <div class="actions">
-        <a href="{% url 'add_row' table.id %}" class="btn-add">Додати рядок</a>
-        <a href="{% url 'custom_table_list' %}" class="btn-back">Назад до таблиць</a>
-    </div>
+    
     <h2 class="excel-title">📂 Завантаження Excel</h2>
 
     <!-- Форма для загрузки файла -->

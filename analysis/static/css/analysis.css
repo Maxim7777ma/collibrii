@@ -1,38 +1,151 @@
+/* 🌟 Общие стили */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Poppins', sans-serif;
+    background: #111;
+    color: white;
     text-align: center;
-    padding: 20px;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Чтобы не было горизонтального скролла */
 }
 
+/* 🔥 Заголовок */
 h1 {
-    color: #333;
+    font-size: 36px;
+    font-weight: bold;
+    margin-top: 20px;
+    text-transform: uppercase;
+    text-shadow: 3px 3px 15px rgba(255, 0, 0, 0.8);
+    animation: pulseText 2s infinite alternate;
 }
 
-table {
-    width: 80%;
-    margin: auto;
-    border-collapse: collapse;
+/* 🔥 Анимация пульсации текста */
+@keyframes pulseText {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
-table, th, td {
-    border: 1px solid black;
+/* 🌟 Контейнер списка */
+.button-list {
+    display: flex;
+    flex-wrap: wrap; /* Кнопки автоматически переносятся */
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+    list-style: none;
+    margin: 30px auto;
+    max-width: 80%;
 }
 
-th, td {
-    padding: 10px;
-    text-align: center;
+/* 🌟 Кнопки */
+.btn-table {
+    display: inline-block;
+    font-size: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 15px 40px;
+    border-radius: 12px;
+    color: white;
+    border: 3px solid white;
+    background: linear-gradient(45deg, #d10000, #ff4d4d);
+    box-shadow: 0px 6px 20px rgba(209, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease-in-out;
 }
 
+/* 🔥 Анимация мигания кнопок */
+@keyframes glowing {
+    0% { box-shadow: 0px 6px 20px rgba(209, 0, 0, 0.5); }
+    50% { box-shadow: 0px 10px 25px rgba(255, 0, 0, 0.7); }
+    100% { box-shadow: 0px 6px 20px rgba(209, 0, 0, 0.5); }
+}
+.btn-table {
+    animation: glowing 2s infinite alternate;
+}
+
+/* 🔥 Анимация при наведении */
+.btn-table:hover {
+    transform: scale(1.1);
+    background: linear-gradient(45deg, #ff4d4d, #d10000);
+    box-shadow: 0px 12px 30px rgba(255, 0, 0, 0.7);
+}
+
+/* 🔥 Анимация при нажатии */
+.btn-table:active {
+    transform: scale(0.95);
+}
+
+/* 🔥 Анимация вспышки на кнопке */
+.btn-table::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 60%);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.1);
+    transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+}
+.btn-table:hover::before {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0.3;
+}
+
+/* 🔥 Анимация плавного перемещения */
+@keyframes floating {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+}
+.btn-table {
+    animation: floating 3s infinite ease-in-out;
+}
+
+/* 🌟 Кнопка "Назад" */
 .btn-back {
     display: inline-block;
-    margin-top: 20px;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
+    font-size: 18px;
+    font-weight: bold;
     text-decoration: none;
-    border-radius: 5px;
+    padding: 12px 30px;
+    border-radius: 8px;
+    color: black;
+    background: white;
+    border: 2px solid red;
+    transition: all 0.4s ease-in-out;
+    margin-top: 20px;
 }
 
+/* 🔥 Эффект при наведении на кнопку "Назад" */
 .btn-back:hover {
-    background-color: #0056b3;
+    background: red;
+    color: white;
+    border-color: black;
+    transform: scale(1.1);
+}
+
+/* 🔥 Анимация кнопки "Назад" */
+@keyframes slideIn {
+    0% { transform: translateY(50px); opacity: 0; }
+    100% { transform: translateY(0px); opacity: 1; }
+}
+.btn-back {
+    animation: slideIn 1s ease-in-out;
+}
+
+/* 🌟 Адаптивность */
+@media (max-width: 768px) {
+    .button-list {
+        flex-direction: column;
+        
+    }
+    .btn-table {
+        width: 80%;
+        max-width: 300px;
+    }
 }

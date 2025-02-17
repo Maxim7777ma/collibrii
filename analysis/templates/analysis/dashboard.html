@@ -10,7 +10,7 @@
 <body>
     <h1>Выберите таблицу для анализа</h1>
     {% if tables %}
-        <ul>
+        <ul class="button-list">
             {% for table in tables %}
                 <li>
                     <a href="{% url 'table_analysis' table.id %}" class="btn-table">{{ table.name }}</a>

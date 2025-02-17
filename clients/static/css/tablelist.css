@@ -1,18 +1,18 @@
 /* Общие стили */
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
+    background: black;
     margin: 0;
     padding: 20px;
     box-sizing: border-box;
-    color: #333;
+    color: #ffffff;
 }
 
 /* Заголовок */
 h1 {
     text-align: center;
     margin-bottom: 20px;
-    color: #333;
+    color: #717171;
     font-size: 28px;
     font-weight: 700;
 }
@@ -38,8 +38,9 @@ h1 {
     padding: 12px 24px;
     font-size: 1.1rem;
     font-weight: 600;
-    color: white;
-    background: linear-gradient(135deg, #00c853, #1de9b6);
+    color: rgb(255, 255, 255);
+    -webkit-text-stroke: 1px black; /* Четкая обводка */
+    background: linear-gradient(135deg, #bdfbd7, #ffffff);
     border-radius: 50px;
     transition: all 0.3s ease-in-out;
     box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4);
@@ -70,15 +71,15 @@ h1 {
 /* Эффект парящей кнопки */
 .btn-add:hover {
     transform: translateY(-3px);
-    background: linear-gradient(135deg, #00e676, #00bfa5);
-    box-shadow: 0 8px 25px rgba(0, 200, 83, 0.6);
+    background: linear-gradient(135deg, #b4f3d5, #a4feb9);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.6);
 }
 
 /* Добавляем мягкую пульсацию */
 @keyframes pulse-green {
-    0% { box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4); }
-    50% { box-shadow: 0 8px 30px rgba(0, 200, 83, 0.6); }
-    100% { box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4); }
+    0% { box-shadow: 0 6px 20px rgba(163, 255, 201, 0.4); }
+    50% { box-shadow: 0 8px 30px rgba(108, 199, 145, 0.6); }
+    100% { box-shadow: 0 6px 20px rgba(137, 163, 148, 0.4); }
 }
 
 .btn-add:hover {
@@ -129,8 +130,9 @@ table {
 }
 
 th, td {
+    background: #000;
     padding: 12px 15px;
-    border: 1px solid #ddd;
+    border: 1px solid #ffffff;
     text-align: left;
 }
 #a_class {
@@ -160,9 +162,10 @@ th, td {
 
 /* Заголовок таблицы */
 th {
-    background-color: #6a82fb;
-    color: white;
+    background-color: #dd0f0fdf;
+    color: rgb(0, 0, 0);
     font-weight: bold;
+    text-align: center;
 }
 
 /* Чередующиеся строки */
@@ -277,11 +280,11 @@ a{
 
 
 .filter-toggle-btn {
-    background-color: #1bb2d1ab;
+    background-color: #d1818fab;
     color: white;
     border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
+    padding: 13px 15px;
+    border-radius: 20px;
     cursor: pointer;
     font-size: 16px;
     transition: 0.3s;
@@ -290,7 +293,7 @@ a{
 
 /* Кнопки */
  .filter-apply-btn, .filter-reset-btn {
-    background-color: #4CAF50;
+    background-color: #c3cfc4;
     color: white;
     border: none;
     padding: 10px 15px;
@@ -301,7 +304,7 @@ a{
 }
 
 .filter-toggle-btn:hover {
-    background-color: #45a049;
+    background-color: #9ac19c;
 }
 
 /* Кнопка сброса */
@@ -448,10 +451,10 @@ a{
     font-size: 1.1rem;
     font-weight: 600;
     color: white;
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    background: linear-gradient(135deg, #e85055c1, #e76262);
     border-radius: 50px;
     transition: all 0.3s ease-in-out;
-    box-shadow: 0 6px 20px rgba(37, 117, 252, 0.4);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.622);
     position: relative;
     overflow: hidden;
 }
@@ -479,15 +482,15 @@ a{
 /* Эффект парящей кнопки */
 .btn-back:hover {
     transform: translateY(-3px);
-    background: linear-gradient(135deg, #7b1fa2, #1e88e5);
-    box-shadow: 0 8px 25px rgba(37, 117, 252, 0.6);
+    background: linear-gradient(135deg, #a21f1f, #e51e1e);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.6);
 }
 
 /* Добавляем мягкую пульсацию */
 @keyframes pulse {
-    0% { box-shadow: 0 6px 20px rgba(37, 117, 252, 0.4); }
-    50% { box-shadow: 0 8px 30px rgba(37, 117, 252, 0.6); }
-    100% { box-shadow: 0 6px 20px rgba(37, 117, 252, 0.4); }
+    0% { box-shadow: 0 6px 20px rgba(119, 142, 183, 0.4); }
+    50% { box-shadow: 0 8px 30px rgb(224, 235, 255); }
+    100% { box-shadow: 0 6px 20px rgba(200, 204, 209, 0.4); }
 }
 
 .btn-back:hover {
@@ -573,10 +576,10 @@ a{
 .excel-title {
     font-size: 24px;
     font-weight: bold;
-    color: #5a72a7;
+    color: #ffffff;
     text-align: center;
     margin-bottom: 20px;
-    text-shadow: 0px 3px 10px rgba(90, 114, 167, 0.3);
+    text-shadow: 0px 3px 10px rgba(255, 0, 0, 0.3);
     opacity: 0;
     transform: translateY(-10px);
     animation: fadeInDown 0.8s ease-in-out forwards;
@@ -755,7 +758,7 @@ a{
     margin: 20px 0;
     border: none;
     height: 2px;
-    background: linear-gradient(to right, rgba(110, 168, 255, 0), rgba(110, 168, 255, 0.6), rgba(110, 168, 255, 0));
+    background: linear-gradient(to right, rgba(110, 168, 255, 0), rgba(255, 0, 0, 0.6), rgba(110, 168, 255, 0));
 }
 
 /* 🌟 Анимации */
@@ -819,14 +822,14 @@ a{
     font-size: 2.2rem;
     font-weight: bold;
     text-align: center;
-    background: linear-gradient(90deg, #41ffbd, #00f4c7);
+    background: linear-gradient(90deg, #ffffff, #ffffff);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 3px 3px 12px rgba(57, 255, 242, 0.6);
+    text-shadow: 3px 3px 12px rgba(255, 255, 255, 0.677);
     padding: 15px 30px;
     border-radius: 20px;
-    box-shadow: 0px 5px 20px rgba(2, 248, 158, 0.5);
+    box-shadow: 0px 5px 20px rgba(255, 255, 255, 0.5);
     opacity: 0;
     transform: scale(0.8) translateY(-20px);
     transition: opacity 1s ease-out, transform 0.8s ease-out;
@@ -847,12 +850,17 @@ a{
     }
     50% {
         transform: scale(1.05);
-        text-shadow: 0px 0px 30px rgba(111, 255, 0, 0.7);
+        text-shadow: 0px 0px 30px rgba(234, 76, 76, 0.7);
+    }
+    80% {
+        opacity: 1;
+        transform: scale(1);
+        text-shadow: 3px 3px 12px rgba(0, 0, 0, 0.6);
     }
     100% {
         opacity: 1;
         transform: scale(1);
-        text-shadow: 3px 3px 12px rgba(13, 255, 0, 0.6);
+        text-shadow: 3px 3px 12px rgb(255, 255, 255);
     }
 }
 
@@ -862,7 +870,7 @@ a{
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 2px;
-    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    background: linear-gradient(135deg, #f23434, #ff0000);
     color: white;
     padding: 14px 28px;
     border: none;
@@ -871,7 +879,7 @@ a{
     position: relative;
     overflow: hidden;
     transition: all 0.4s ease-in-out;
-    box-shadow: 0px 6px 18px rgba(0, 114, 255, 0.5);
+    box-shadow: 0px 6px 18px rgba(255, 255, 255, 0.5);
     animation: fadeInScale 0.8s ease-in-out forwards;
     width: 100%;
     padding: 2rem;
@@ -879,8 +887,8 @@ a{
 
 /* 🔥 Добавляем эффект свечения */
 #load-more-btn:hover {
-    background: linear-gradient(135deg, #0072ff, #00c6ff);
-    box-shadow: 0px 10px 25px rgba(0, 114, 255, 0.8);
+    background: linear-gradient(135deg, #ff2b2b, #ff1212);
+    box-shadow: 0px 10px 25px rgba(255, 255, 255, 0.8);
     transform: scale(1.07);
 }
 
@@ -919,7 +927,7 @@ a{
 /* 🚀 Анимация кнопки при нажатии */
 #load-more-btn:active {
     transform: scale(0.95);
-    box-shadow: 0px 4px 12px rgba(0, 114, 255, 0.7);
+    box-shadow: 0px 4px 12px rgba(255, 255, 255, 0.7);
 }
 
 
@@ -930,14 +938,14 @@ a{
 
 /* 📊 Блок статистики загрузки */
 .upload-summary {
-    background: rgba(240, 248, 255, 0.2);
+    background: rgba(255, 255, 255, 0.2);
     padding: 15px;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(150, 170, 200, 0.15);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
     margin-top: 20px;
     text-align: center;
     font-size: 1rem;
-    color: #333;
+    color: #ffffff;
     animation: fadeIn 1.2s ease-in-out forwards;
 }
 
@@ -1028,6 +1036,7 @@ a{
 
     h1 {
         font-size: 24px;
+        color: #f8f8f8;
     }
 
     .btn-add, .btn-cancel, td .btn-edit , .btn-delete {
@@ -1258,7 +1267,7 @@ a{
     font-weight: 600;
     background: none;
     border: none;
-    color: #000;
+    color: #ffffff;
     appearance: none;
     cursor: pointer;
     outline: none;
@@ -1269,7 +1278,7 @@ a{
 
 /* Анимация при наведении */
 .editable-select:hover {
-    border-color: #000;
+    border-color: #ffffff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -1282,8 +1291,8 @@ a{
 
 /* Кастомная стрелка */
 .editable-select {
-    background-image: linear-gradient(45deg, transparent 50%, #000 50%),
-                      linear-gradient(135deg, #000 50%, transparent 50%);
+    background-image: linear-gradient(45deg, transparent 50%, #ff0000 50%),
+                      linear-gradient(135deg, #ff0000 50%, transparent 50%);
     background-position: calc(100% - 20px) center, calc(100% - 15px) center;
     background-size: 5px 5px, 5px 5px;
     background-repeat: no-repeat;
@@ -1293,7 +1302,7 @@ a{
 .editable-select option {
     padding: 12px;
     background: none;
-    color: #000;
+    color: #ffffff;
     font-weight: 500;
     border-bottom: 1px solid rgba(0, 0, 0, 0.2);
     transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
@@ -1319,7 +1328,7 @@ a{
     font-weight: 600;
     background: none;
     border: none; /* Красная рамка */
-    color: #000;
+    color: #ffffff;
     appearance: none;
     cursor: pointer;
     outline: none;
@@ -1330,7 +1339,7 @@ a{
 
 /* Анимация при наведении */
 .editable-select.contact-select:hover {
-    border-color: #000;
+    border-color: #ffffff;
     box-shadow: 0 0 10px rgba(209, 0, 0, 0.3);
 }
 
@@ -1355,7 +1364,7 @@ a{
 .editable-select.contact-select option {
     padding: 12px;
     background: none;
-    color: #000;
+    color: #ffffff;
     font-weight: 500;
     border-bottom: 1px solid rgba(209, 0, 0, 0.2);
     transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
@@ -1382,7 +1391,7 @@ a{
     font-weight: 600;
     background: none;
     border: none; /* Черная рамка вместо красной */
-    color: #000000;
+    color: #ffffff;
     border-radius: 2rem;
     appearance: none;
     cursor: pointer;
@@ -1399,8 +1408,8 @@ a{
 
 /* Анимация при фокусе */
 .editable-select.status-select:focus {
-    border-color: #000;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    border-color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.64);
     transform: scale(1.03);
 }
 
@@ -1417,7 +1426,7 @@ a{
 .editable-select.status-select option {
     padding: 12px;
     background: #fff;
-    color: #000;
+    color: #ffffff;
     font-weight: 500;
     border-bottom: 1px solid rgba(255, 0, 0, 0.2);
     transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
