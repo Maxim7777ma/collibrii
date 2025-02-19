@@ -1,6 +1,6 @@
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(123deg, #0053ff 0%, #c8ff6d 100%);
+    background: linear-gradient(123deg,#d13636 0%, #000000 100%);
     margin: 0;
     padding: 20px;
     display: flex;
@@ -612,3 +612,112 @@ label {
     color: #fff;
 }
 
+
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(123deg, #0053ff 0%, #c8ff6d 100%);
+    }
+
+    h1 {
+        font-size: 22px;
+        margin-bottom: 15px;
+    }
+
+    .table-form {
+        width: 90%;
+        max-width: 350px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-form label {
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    .table-form input,
+    .table-form textarea {
+        font-size: 14px;
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+
+    .btn-save, .btn-cancel {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 6px;
+        margin-top: 15px;
+    }
+
+    .input-group {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .input-group input {
+        width: 100%;
+        border-radius: 6px;
+    }
+
+    .input-group select {
+        width: 100%;
+        border-radius: 6px;
+    }
+
+    .currency-field {
+        flex-direction: column;
+        gap: 5px;
+        padding: 10px;
+        border-radius: 8px;
+    }
+
+    .currency-input {
+        font-size: 16px;
+        padding: 10px;
+    }
+
+    .currency-select {
+        font-size: 16px;
+        padding: 8px;
+    }
+
+    .field-manually_updated {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .field-manually_updated input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin: 0;
+    }
+
+    .french-style {
+        font-size: 1rem;
+        padding: 10px 14px;
+        border-radius: 8px;
+    }
+
+    .french-style select {
+        font-size: 14px;
+        padding: 6px 10px;
+    }
+
+    #id_priority, #id_contact, #id_status, #id_change_status_contact {
+        font-size: 14px;
+        padding: 10px;
+        border-radius: 6px;
+    }
+}
