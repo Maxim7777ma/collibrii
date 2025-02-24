@@ -7,6 +7,17 @@ header {
 
 }
 
+@keyframes slideInLeft {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 /* Vector */
 .header_fon_black {
     width: 72%;
@@ -14,7 +25,11 @@ header {
     border-top-right-radius: 105rem;
     border-bottom-right-radius: 300rem;
     justify-content: space-between;
+    
+    /* Применяем анимацию */
+    animation: slideInLeft 5s ease-out;
 }
+
 
 .block-centr_reg{
     height: 100%;
@@ -84,13 +99,49 @@ body {
 
 
 
-
-body {
-    background-image: url("../images/Group.png"); /* Относительный путь */
-    background-size: 95%; /* Уменьшаем размер до 80% */
-    background-position: center; /* Центрирует */
-    background-repeat: no-repeat; /* Отключает повторение */
+/* Анимация плавного появления */
+@keyframes fadeInBackground {
+    0% {
+        opacity: 0;
+        transform: scale(1.05);
+        filter: blur(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
 }
+
+/* Анимация движения фона */
+@keyframes movingBackground {
+    0% {
+        background-position: 50% 50%;
+        transform: scale(1);
+    }
+    50% {
+        background-position: 48% 52%;
+        transform: scale(1.02);
+    }
+    100% {
+        background-position: 50% 50%;
+        transform: scale(1);
+    }
+}
+
+/* Применяем анимации к body */
+body {
+    animation: 
+        fadeInBackground 2s ease-in-out, /* Плавное появление */
+        movingBackground 10s ease-in-out infinite alternate; /* Бесконечное движение */
+    
+    background-image: url("../images/Group.png"); /* Путь к изображению */
+    background-size: 120%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+
 
 .b2y-centr-container {
     display: flex;
@@ -198,3 +249,129 @@ h3{
 
 
 
+
+
+
+
+
+
+/* АДАПТАЦИЯ ПОД МОБИЛЬНЫЕ УСТРОЙСТВА */
+@media (max-width: 768px) {
+
+
+    body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden; /* Предотвращает горизонтальный скролл */
+    }
+    header {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+        height: 2rem;
+    }
+
+    .header_fon_black {
+        width: 30%;
+        height: 5rem;
+        border-top-right-radius: 105rem;
+        border-bottom-right-radius: 300rem;
+
+    }
+    .block-centr_reg{
+        margin-top: 1rem;
+    }
+    .block-centr{
+        margin-top: 1rem;
+    }
+    .select-lang{
+        margin-top: 3rem;
+    }
+
+    .btn-new-user {
+        display: flex;
+        width: 90px;
+        height: 30px;
+        font-size: 11px;
+        align-content: center;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .b2y-container {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .b2y-bottom-bar {
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    .b2y-social-icon {
+        width: 35px;
+        height: 35px;
+    }
+
+    h3 {
+        font-size: 1.5rem;
+    }
+}
+
+/* АДАПТАЦИЯ ДЛЯ СУПЕР МАЛЕНЬКИХ ЭКРАНОВ (до 480px) */
+@media (max-width: 480px) {
+    body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden; /* Предотвращает горизонтальный скролл */
+    }
+    header {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        padding: 0;
+    }
+    .header_fon_black {
+        width: 30%;
+        border-radius: 0;
+        height: 5rem;
+        border-top-right-radius: 105rem;
+        border-bottom-right-radius: 300rem;
+    }
+
+    .btn-new-user {
+        display: flex;
+        width: 90px;
+        height: 30px;
+        font-size: 11px;
+        align-content: center;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .b2y-container {
+        width: 95%;
+        padding: 10px;
+    }
+
+    .b2y-bottom-bar {
+        gap: 5px;
+    }
+
+    .b2y-social-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .b2y-social-icon img {
+        width: 20px;
+        height: 20px;
+    }
+
+    h3 {
+        font-size: 1.2rem;
+    }
+    .b2y-centr-container{
+        display: none;
+    }
+}

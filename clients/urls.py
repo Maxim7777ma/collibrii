@@ -21,12 +21,19 @@ urlpatterns = [
     path('tables/<int:table_id>/', views.custom_row_list, name='custom_row_list'),  # Просмотр строк в таблице
     path('tables/<int:table_id>/add/', views.add_row, name='add_row'), # Добавление строки в таблицу
     path('tables/<int:table_id>/edit/<int:row_id>/', views.edit_row, name='edit_row'),  # Редактировать строку
-    path('tables/<int:table_id>/delete-row/<int:pk>/', views.delete_row, name='delete_row'),   # Удалить строку
+    
+    path("tables/<int:table_pk>/delete-row/<int:row_id>/", views.delete_row, name="delete_row"),
+    
     path('tables/update-status/<int:row_id>/', views.update_status, name='update_status'),
     path('tables/update-contact1/<int:pk>/', views.update_contact1, name='update_contact1'),
     path('tables/update-status1/<int:pk>/', views.update_status1, name='update_status1'),
     path('tables/update-priority/<int:pk>/', views.update_priority, name='update_priority'),
     path('tables/<int:table_id>/', views.table_rows, name='table_rows'),
+
+    path("tables/all-filter-rows/<int:table_pk>/", views.all_filter_rows, name="all_filter_rows"),
+
+    
+
     path('tables/filter-rows/<int:table_pk>/', views.filter_rows, name='filter_rows_all'),
     path('tables/reset_filter/<int:pk>/', views.reset_row_filter, name='reset_row_filter'),
     path('tables/update-field/<int:row_id>/', views.update_field, name='update_field'),

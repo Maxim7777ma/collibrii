@@ -10,6 +10,8 @@
 </head>
 <body>
     <h1>Список строк таблиці: {{ table.name }}</h1>
+    <h2>🔎 Розумний пошук по таблиці</h2>
+    <input class="global_filtr" type="text" id="search" placeholder="🔎 Введіть текст, суму, дату або валюту..." style="width: 300px; padding: 5px;">
 
     
     <!-- Кнопки навигации -->
@@ -92,6 +94,18 @@
             <p><strong>🗑 Видалені записи:</strong> <span id="deleted-rows">0</span></p>
             <p><strong>⏳ Час обробки:</strong> <span id="processing-time">0 сек.</span></p>
             <p><strong>📅 Дата завантаження:</strong> <span id="upload-time">-</span></p>
+    </div>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>Видалення запису</h3>
+            <p>Ви впевнені, що хочете видалити цей запис?</p>
+            <div class="modal-buttons">
+                <button id="confirmDelete" class="btn-confirm">Так, видалити</button>
+                <button id="cancelDelete" class="btn-cancel">Скасувати</button>
+            </div>
+        </div>
     </div>
     
 
@@ -285,29 +299,95 @@
             });
         });
 
-        // Удаление строки
-        document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', function () {
-                const rowId = this.dataset.rowId;
-                if (confirm(`Вы уверены, что хотите удалить строку с ID ${rowId}?`)) {
-                    fetch(`/clients/tables/{{ table.id }}/delete-row/${rowId}/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': getCSRFToken()
-                        }
-                    })
+
+    </script>
+
+     <!-- удалить строку  -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            console.log("📌 DOM загружен, инициализация удаления записей...");
+        
+            // Получаем ссылки на элементы модального окна
+            const deleteModal = document.getElementById("deleteModal");
+            const deleteConfirmBtn = document.getElementById("confirmDelete");
+            const deleteCancelBtn = document.getElementById("cancelDelete");
+            let deleteRowId = null;
+        
+            // Функция показа модального окна
+            function showDeleteModal(rowId) {
+                deleteRowId = rowId;
+                deleteModal.classList.add("show");
+            }
+        
+            // Функция скрытия модального окна
+            function hideDeleteModal() {
+                deleteRowId = null;
+                deleteModal.classList.remove("show");
+            }
+        
+            // Обработчик удаления после подтверждения
+            deleteConfirmBtn.addEventListener("click", function () {
+                if (deleteRowId) {
+                    deleteRow(deleteRowId);
+                }
+                hideDeleteModal();
+            });
+        
+            deleteCancelBtn.addEventListener("click", function () {
+                hideDeleteModal();
+            });
+        
+            // Функция удаления строки
+            function deleteRow(rowId) {
+                let tablePk = document.getElementById("data-table").getAttribute("data-table-id");
+        
+                fetch(`/clients/tables/${tablePk}/delete-row/${rowId}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCSRFToken(),
+                    },
+                })
                     .then(response => {
-                        if (response.ok) {
+                        if (!response.ok) {
+                            throw new Error(`❌ Сервер вернул ошибку: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            console.log(`✅ Запись ${rowId} удалена`);
                             document.querySelector(`tr[data-row-id="${rowId}"]`).remove();
                         } else {
-                            alert('Ошибка удаления строки.');
+                            console.error("❌ Ошибка при удалении:", data.error);
                         }
                     })
-                    .catch(error => console.error('Ошибка сети:', error));
-                }
+                    .catch(error => console.error("❌ Ошибка сети:", error));
+            }
+        
+            // Назначаем обработчики на кнопки удаления
+            document.querySelectorAll(".btn-delete").forEach(button => {
+                button.addEventListener("click", function () {
+                    let rowId = this.dataset.rowId;
+                    showDeleteModal(rowId); // Используем кастомное модальное окно
+                });
             });
+        
+            // Получение CSRF-токена
+            function getCSRFToken() {
+                let csrfToken = null;
+                const cookies = document.cookie.split(";");
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith("csrftoken=")) {
+                        csrfToken = cookie.substring("csrftoken=".length);
+                    }
+                }
+                return csrfToken;
+            }
         });
-    </script>
+        
+    </script>    
+
     <script>
 
         
@@ -367,7 +447,7 @@
         });
     </script>
 
-    
+     <!-- Фильтр -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             console.log("📌 DOM загружен, инициализация фильтров...");
@@ -461,6 +541,7 @@
             if (hasFilters) {
                 sendFilterRequest();
             }
+            
     
             // 🔹 Функция отправки запроса с фильтрами
             function sendFilterRequest() {
@@ -744,6 +825,75 @@
                 // ✅ Перезагружаем страницу, чтобы загрузились все данные без фильтра
                 location.reload();
             }
+
+            // Обработчик клика по кнопке удаления
+            document.addEventListener("click", function (event) {
+                if (event.target.classList.contains("btn-delete")) {
+                    let rowId = event.target.dataset.rowId;
+                    showDeleteModal(rowId); // Показываем модальное окно
+                }
+            });
+
+            
+            // Функция показа модального окна
+            function showDeleteModal(rowId) {
+                let modal = document.getElementById("deleteModal");
+                let confirmButton = document.getElementById("confirmDelete");
+                let cancelButton = document.getElementById("cancelDelete");
+
+                modal.style.display = "block"; // Показываем модалку
+
+                // Удаляем предыдущий обработчик, если он есть
+                confirmButton.removeEventListener("click", confirmDeleteHandler);
+                cancelButton.removeEventListener("click", hideDeleteModal);
+
+                // Создаем новую функцию для обработки удаления
+                function confirmDeleteHandler() {
+                    deleteRow(rowId); // Удаляем строку
+                    hideDeleteModal(); // Закрываем модальное окно
+                }
+
+                function hideDeleteModal() {
+                    modal.style.display = "none"; // Скрываем окно
+                }
+
+                // Добавляем новый обработчик
+                confirmButton.addEventListener("click", confirmDeleteHandler);
+                cancelButton.addEventListener("click", hideDeleteModal);
+            }
+
+            function deleteRow(rowId) {
+                let tablePk = document.getElementById("data-table").getAttribute("data-table-id");
+            
+                fetch(`/clients/tables/${tablePk}/delete-row/${rowId}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCSRFToken(),
+                    },
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`❌ Сервер вернул ошибку: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        console.log(`✅ Запись ${rowId} удалена`);
+            
+                        // Удаляем строку из DOM
+                        let rowElement = document.querySelector(`tr[data-row-id="${rowId}"]`);
+                        if (rowElement) {
+                            rowElement.remove();
+                        } else {
+                            console.warn(`⚠ Строка с ID ${rowId} не найдена в DOM!`);
+                        }
+                    } else {
+                        console.error("❌ Ошибка при удалении:", data.error);
+                    }
+                })
+                .catch(error => console.error("❌ Ошибка сети:", error));
+            }
             
             
             
@@ -851,6 +1001,282 @@
         return document.querySelector("input[name='csrfmiddlewaretoken']").value;
     }
 </script>
+
+
+
+
+ <!--обновление строк по глобальному поиску-->
+ <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("📌 DOM загружен, инициализация глобального поиска...");
+    
+        const searchInput = document.getElementById("search");
+        const tableBody = document.getElementById("table-body");
+        const tableElement = document.getElementById("data-table");
+        const loadMoreBtn = document.getElementById("load-more-btn");
+        
+
+
+        
+    
+        // Модальное окно
+        const deleteModal = document.getElementById("deleteModal");
+        const confirmDeleteBtn = document.getElementById("confirmDelete");
+        const cancelDeleteBtn = document.getElementById("cancelDelete");
+    
+        let deleteRowId = null; // Для хранения ID строки, которую нужно удалить
+    
+        if (!searchInput || !tableBody || !tableElement || !loadMoreBtn) {
+            console.error("❌ Один или несколько элементов не найдены! Проверь ID в HTML.");
+            return;
+        }
+    
+        let tablePk = tableElement.getAttribute("data-table-id");
+        let wasTyped = false; // Флаг, отслеживающий, вводил ли пользователь что-то
+        searchInput.addEventListener("input", function () {
+            let query = this.value.trim();
+            if (query.length > 0) {
+                wasTyped = true; // Пользователь ввел данные
+            }
+        
+            if (wasTyped && query.length === 0) {
+                location.reload(); // 🔄 Если поле стало пустым после ввода — обновляем страницу
+                return;
+            }
+        
+            if (query.length < 2) return;
+
+                    // **Обрабатываем дату в формате ДД.ММ.ГГГГ или ДД.ММ.ГГГГ ЧЧ:ММ**
+            let dateRegex = /^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{2}):(\d{2}))?$/;
+            let match = query.match(dateRegex);
+            let requestData = { search: query };
+
+            if (match) {
+                let day = match[1];
+                let month = match[2];
+                let year = match[3];
+                let hours = match[4] || "00"; // Если нет времени, устанавливаем 00:00
+                let minutes = match[5] || "00";
+
+                let formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+                console.log("📅 Найдена дата:", formattedDate);
+
+                requestData = { date_search: formattedDate };
+            }
+        
+    
+            fetch(`/clients/tables/all-filter-rows/${tablePk}/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken(),
+                },
+                body: JSON.stringify({ search: query }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log("📌 Найдено строк:", data.data.length);
+                    updateTable(data.data, data.duplicate_usernames || [], data.duplicate_phones || []);
+                } else {
+                    console.error("❌ Ошибка поиска:", data.error);
+                }
+            })
+            .catch(error => console.error("❌ Ошибка сети:", error));
+        });
+
+
+
+        function deleteRow(rowId) {
+            fetch(`/clients/tables/${tablePk}/delete-row/${rowId}/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCSRFToken()
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("❌ Сервер повернув помилку: " + response.status);
+                }
+                return response.json(); // ✅ Ожидаем JSON, не HTML
+            })
+            .then(data => {
+                if (data.success) {
+                    console.log(`✅ Рядок ${rowId} успішно видалено.`);
+                    document.querySelector(`tr[data-row-id="${rowId}"]`).remove(); // Удаляем строку из DOM
+    
+                    // После удаления НЕ сбрасываем фильтр, а обновляем данные в таблице
+                    if (searchInput.value.trim().length >= 2) {
+                        searchInput.dispatchEvent(new Event('input'));
+                    }
+                } else {
+                    console.error("❌ Помилка при видаленні:", data.error);
+                }
+            })
+            .catch(error => console.error("❌ Помилка мережі:", error));
+        }
+    
+        function activateDeleteButtons() {
+            document.querySelectorAll(".btn-delete").forEach(button => {
+                button.addEventListener("click", function () {
+                    deleteRowId = this.dataset.rowId;
+                    deleteModal.classList.add("show"); // Показываем модальное окно
+                });
+            });
+        }
+    
+        // Подтверждение удаления
+        confirmDeleteBtn.addEventListener("click", function () {
+            if (deleteRowId) {
+                deleteRow(deleteRowId);
+            }
+            deleteModal.classList.remove("show");
+        });
+
+    
+        // Отмена удаления
+        cancelDeleteBtn.addEventListener("click", function () {
+            deleteModal.classList.remove("show");
+        });
+    
+        function updateTable(rows, duplicateUsernames, duplicatePhones) {
+            tableBody.innerHTML = "";
+    
+            window.allFilteredRows = rows;
+            window.loadedRows = 0;
+            window.duplicateUsernames = duplicateUsernames;
+            window.duplicatePhones = duplicatePhones;
+    
+            let rowsToLoad = rows.slice(0, 30);
+            rowsToLoad.forEach(row => addTableRow(row));
+    
+            window.loadedRows = rowsToLoad.length;
+            loadMoreBtn.style.display = rows.length > 30 ? "block" : "none";
+
+            activateDeleteButtons(); // ✅ Подключаем обработку удаления после фильтрации
+        }
+        activateDeleteButtons(); // Запускаем обработку после загрузки страницы
+    
+        function addTableRow(row) {
+            let tr = document.createElement("tr");
+            tr.setAttribute("data-row-id", row.pk);
+    
+            let tdId = document.createElement("td");
+            tdId.textContent = row.pk;
+            tr.appendChild(tdId);
+    
+            Object.keys(row.fields).forEach(field => {
+                let td = document.createElement("td");
+                let value = row.fields[field] || "-";
+    
+                // ✅ Проверяем, есть ли глобальные массивы, чтобы не было ошибки
+                if (!window.duplicateUsernames) window.duplicateUsernames = [];
+                if (!window.duplicatePhones) window.duplicatePhones = [];
+    
+                // ✅ Подсветка дубликатов Instagram
+                if (field === "instagram_username") {
+                    let a = document.createElement("a");
+                    a.href = row.fields["instagram_link"] || "#";
+                    a.textContent = value || "-";
+                    a.target = "_blank";
+                    a.id = "a_class"; // ✅ Добавлен id
+
+                    if (window.duplicateUsernames.includes(value)) {
+                        td.classList.add("duplicate");
+                        console.log(`🚨 Дубликат Instagram: ${value}`);
+                    }
+
+                    td.appendChild(a);
+                }
+                // ✅ Подсветка дубликатов Телефонов
+                else if (field === "phone_number") {
+                    let a = document.createElement("a");
+                    a.href = `tel:${value}`;
+                    a.textContent = value || "-";
+                    a.classList.add("phone-link");
+
+                    if (window.duplicatePhones.includes(value)) {
+                        td.classList.add("duplicate");
+                        console.log(`🚨 Дубликат телефона: ${value}`);
+                    }
+
+                    td.appendChild(a);
+                }
+                // ✅ Выбор из выпадающего списка
+                else if (["status", "contact", "priority"].includes(field)) {
+                    let select = document.createElement("select");
+                    select.classList.add("editable-select");
+                    select.dataset.rowId = row.pk;
+    
+                    let options = {
+                        "status": { "lead": "Лід", "client": "Клієнт", "customer": "Замовник" },
+                        "contact": { "contact_1": "Контакт 1", "contact_2": "Контакт 2", "contact_3": "Контакт 3", "contact_4": "Контакт 4" },
+                        "priority": { "low": "Низький", "medium": "Середній", "high": "Високий" }
+                    };
+    
+                    Object.entries(options[field]).forEach(([value, label]) => {
+                        let opt = document.createElement("option");
+                        opt.value = value;
+                        opt.textContent = label;
+                        if (row.fields[field] === value) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+    
+                    select.addEventListener("change", function () {
+                        updateField(row.pk, field, this.value);
+                    });
+    
+                    td.appendChild(select);
+                }
+                // ✅ Обычные текстовые поля
+                else {
+                    td.textContent = value;
+                }
+    
+                tr.appendChild(td);
+            });
+    
+            // ✅ Кнопки "Редагувати" и "Видалити"
+            let tdActions = document.createElement("td");
+            tdActions.innerHTML = `
+                <a href="/clients/tables/${tablePk}/edit/${row.pk}/" class="btn-edit">Редагувати</a>
+                <button class="btn-delete" data-row-id="${row.pk}">Видалити</button>
+            `;
+            tr.appendChild(tdActions);
+    
+            tableBody.appendChild(tr);
+        }
+    
+        // 🔹 Функция загрузки дополнительных строк
+        loadMoreBtn.addEventListener("click", function () {
+            let rowsToLoad = window.allFilteredRows.slice(window.loadedRows, window.loadedRows + 30);
+            rowsToLoad.forEach(row => addTableRow(row));
+    
+            window.loadedRows += rowsToLoad.length;
+            if (window.loadedRows >= window.allFilteredRows.length) {
+                loadMoreBtn.style.display = "none";
+            }
+        });
+    
+        // 🔹 Получение CSRF-токена
+        function getCSRFToken() {
+            let csrfToken = null;
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    csrfToken = cookie.substring('csrftoken='.length);
+                }
+            }
+            return csrfToken;
+        }
+    });
+    
+</script>
+
+    
+    
+
     
     <style>
         .hidden-row {

@@ -32,6 +32,8 @@ from django.db.models import Q, Count
 from django.contrib.auth.decorators import login_required
 from .models import CustomRow, CustomTable
 from datetime import datetime
+from datetime import datetime, time  # <== Добавляем time
+
 
 from django.shortcuts import redirect
 from django.contrib import messages
@@ -544,30 +546,17 @@ def create_table(request):
 
     return render(request, 'clients/create_table.html', {'form': form})
 # Функция удаления строки
-def delete_row(request, table_id, row_id):
-    table = get_object_or_404(CustomTable, id=table_id)
-    row = get_object_or_404(CustomRow, id=row_id, table=table)
-
+def delete_row(request, table_pk, row_id):
+    """Удаление строки без редиректа"""
     if request.method == "POST":
-        # Удаляем строку
-        row.delete()
-        return redirect('custom_row_list', table_id=table.id)
+        try:
+            row = get_object_or_404(CustomRow, pk=row_id)
+            row.delete()
+            return JsonResponse({"success": True})  # ✅ Возвращаем JSON
+        except CustomRow.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Запис не знайдено"}, status=404)
+    return JsonResponse({"success": False, "error": "Некоректний запит"}, status=400)
 
-    # Если запрос не POST, показываем страницу подтверждения
-    return render(request, 'clients/confirm_delete.html', {'row': row, 'table': table})
-
-# Функция удаления строки
-@csrf_exempt 
-def delete_row(request, table_id, pk):
-    # Получаем таблицу и строку по переданным ключам
-    table = get_object_or_404(CustomTable, id=table_id)
-    row = get_object_or_404(CustomRow, pk=pk, table=table)
-
-    if request.method == "POST":
-        row.delete()
-        return redirect('custom_row_list', table_id=table.id)
-
-    return render(request, 'clients/confirm_delete.html', {'row': row, 'table': table})
 
 from collections import Counter
 
@@ -1111,3 +1100,176 @@ def resolve_duplicate(request, table_pk):
             return JsonResponse({"success": False, "error": str(e)})
     
     return JsonResponse({"success": False, "error": "Некорректный запрос!"})
+
+
+
+import re
+
+from django.utils.timezone import make_aware
+
+import json
+import pytz
+from django.core.exceptions import FieldError
+
+
+
+
+logger = logging.getLogger(__name__)
+
+@csrf_exempt
+def all_filter_rows(request, table_pk):
+    print(f"📌 Запрос пришел на: {request.path}")  # ✅ Покажет реальный URL
+    print(f"📌 Метод запроса: {request.method}")  # ✅ GET или POST?
+
+    table = get_object_or_404(CustomTable, pk=table_pk)
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            logger.debug(f"📥 Фильтр перед обработкой: {data}")
+
+            table = get_object_or_404(CustomTable, pk=table_pk)
+            rows = CustomRow.objects.filter(table=table)
+
+            # 🔥 Получаем только реальные поля (без ForeignKey и OneToOne)
+            existing_fields = [
+                f.name for f in CustomRow._meta.get_fields()
+                if not (f.is_relation and not f.many_to_many)  # Исключаем FK и OneToOne
+            ]
+
+            search_query = data.get("search", "").strip().lower()
+
+            if search_query and len(search_query) >= 2:
+                search_filters = models.Q()
+
+                # Поля для поиска
+                text_fields = [
+                    "name", "manager", "status", "contact", "priority", "city", "country",
+                    "instagram_username", "instagram_link", "phone_number", "email"
+                ]
+                number_fields = ["deal_amount", "paid_amount", "expected_profit"]
+                date_fields = ["record_date", "inquiry_date", "due_date"]
+                currency_fields = ["deal_amount_currency", "paid_amount_currency", "expected_profit_currency"]
+
+                # 1️⃣ **Поиск по тексту**
+                for field in text_fields:
+                    if field in existing_fields:  # ✅ Проверяем существование перед фильтрацией
+                        try:
+                            search_filters |= models.Q(**{f"{field}__icontains": search_query})
+                        except FieldError:
+                            print(f"⚠️ Ошибка: Поле `{field}` отсутствует, пропускаем!")
+
+                # 2️⃣ **Поиск по числам**
+                if re.match(r"^\d+(\.\d+)?$", search_query):  # Если введено число
+                    num_value = float(search_query)
+                    for field in number_fields:
+                        if field in existing_fields:
+                            search_filters |= models.Q(**{f"{field}__gte": num_value})
+
+                # 3️⃣ **Поиск по датам**
+                
+                # ✅ Поиск по числам
+                if re.match(r"^\d+(\.\d+)?$", search_query):  
+                    num_value = float(search_query)
+                    for field in number_fields:
+                        if field in existing_fields:
+                            search_filters |= models.Q(**{f"{field}__gte": num_value})
+                
+
+                # 4️⃣ **Поиск по валюте (USD, EUR, UAH)**
+                if search_query.upper() in ["UAH", "USD", "EUR"]:
+                    for field in currency_fields:
+                        if field in existing_fields:
+                            search_filters |= models.Q(**{field: search_query.upper()})
+
+                
+                # ✅ Поиск по дате в формате `ДД.ММ.ГГГГ` или `ДД.ММ.ГГГГ ЧЧ:ММ`
+                date_match = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{2}):(\d{2}))?$", search_query)
+                if date_match:
+                    day, month, year, hours, minutes = date_match.groups()
+                    hours = hours or "00"
+                    minutes = minutes or "00"
+
+                    try:
+                        # Проверяем, вводил ли пользователь дату с временем или без
+                        if re.match(r"^\d{2}.\d{2}.\d{4} \d{2}:\d{2}$", search_query):  # Формат: ДД.ММ.ГГГГ ЧЧ:ММ
+                            date_value = datetime.strptime(search_query, "%d.%m.%Y %H:%M")
+                            for field in date_fields:
+                                if field in existing_fields:
+                                    search_filters |= models.Q(**{field: date_value})
+
+                        elif re.match(r"^\d{2}.\d{2}.\d{4}$", search_query):  # Формат: ДД.ММ.ГГГГ
+                            date_value = datetime.strptime(search_query, "%d.%m.%Y")
+                            start_of_day = datetime.combine(date_value, time.min)  # 00:00:00
+                            end_of_day = datetime.combine(date_value, time.max)  # 23:59:59
+                            for field in date_fields:
+                                if field in existing_fields:
+                                    search_filters |= models.Q(**{f"{field}__range": (start_of_day, end_of_day)})
+                    except ValueError:
+                        pass  # Не дата — пропускаем
+
+           
+
+                rows = rows.filter(search_filters)
+
+
+            # **🔥 Поиск дубликатов**
+            duplicate_usernames = (
+                CustomRow.objects.values("instagram_username")
+                .annotate(count=Count("instagram_username"))
+                .filter(count__gt=1)
+                .values_list("instagram_username", flat=True)
+            )
+
+            duplicate_phones = (
+                CustomRow.objects.values("phone_number")
+                .annotate(count=Count("phone_number"))
+                .filter(count__gt=1)
+                .values_list("phone_number", flat=True)
+            )
+
+            logger.debug(f"📌 Дубликаты Instagram: {list(duplicate_usernames)}")
+            logger.debug(f"📌 Дубликаты телефонов: {list(duplicate_phones)}")
+
+
+            # 🔥 Формируем ответ
+            filtered_data = []
+            for row in rows:
+                row_data = {"pk": row.pk, "fields": {}}
+
+                for field in table.visible_fields:
+                    field_name = field["name"]
+
+                    if field_name in existing_fields:
+                        field_value = getattr(row, field_name, None)
+
+                        # 🔥 Исправляем ManyToManyField (updated_by)
+                        if isinstance(field_value, models.Manager):  
+                            field_value = list(field_value.values_list("username", flat=True))  # 📌 Превращаем в список
+
+                        # 🔥 Исправляем DateTime поля
+                        if isinstance(field_value, datetime):
+                            field_value = field_value.strftime("%d.%m.%Y %H:%M")
+
+                        # 🔥 JSONField - Оставляем без изменений, если уже dict
+                        if isinstance(field_value, dict):
+                            pass  # JSONField сериализуется автоматически
+
+                        row_data["fields"][field_name] = field_value if field_value is not None else "-"
+
+                filtered_data.append(row_data)
+
+            logger.debug(f"📩 Данные перед отправкой: {filtered_data}")
+
+            return JsonResponse({
+                "success": True,
+                "data": filtered_data,
+                "duplicate_usernames": list(duplicate_usernames),
+                "duplicate_phones": list(duplicate_phones),
+            })
+
+        except Exception as e:
+            logger.error(f"Ошибка в all_filter_rows: {str(e)}")
+            return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+    return JsonResponse({"success": False, "error": "Некорректный запрос!"}, status=400)
