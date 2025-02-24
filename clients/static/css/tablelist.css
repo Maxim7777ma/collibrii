@@ -1363,7 +1363,7 @@ a{
 /* Стилизация опций */
 .editable-select.contact-select option {
     padding: 12px;
-    background: none;
+    background: rgb(219, 0, 0);
     color: #ffffff;
     font-weight: 500;
     border-bottom: 1px solid rgba(209, 0, 0, 0.2);
@@ -1425,9 +1425,9 @@ a{
 /* Стилизация опций */
 .editable-select.status-select option {
     padding: 12px;
-    background: #fff;
+    background: #d20000;
     color: #ffffff;
-    font-weight: 500;
+    font-weight: 800;
     border-bottom: 1px solid rgba(255, 0, 0, 0.2);
     transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
 }

@@ -156,13 +156,14 @@
             <label for="id_manually_updated">Ручне змінення:</label>
              {{ form.manually_updated }}
          </div>
-    {% endif %}
+    
 
     <!-- Поле updated_by (скрыто по умолчанию) -->
     <div class="field-updated_by french-style hidden">
         {{ form.updated_by.label_tag }}
         {{ form.updated_by }}
     </div>
+    {% endif %}
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             setTimeout(() => {
@@ -173,8 +174,10 @@
 
        
         <!-- Кнопки -->
+        <div class="block_butons">
         <button type="submit" class="btn-save">Сохранить</button>
         <a href="{% url 'custom_row_list' table.id %}" class="btn-cancel">Отмена</a>
+        </div>
     </form>
 
     <!-- Скрипт для динамических изменений (опционально, если нужно) -->
@@ -193,21 +196,28 @@
             const updatedByField = document.querySelector('.field-updated_by');
         
             function toggleUpdatedBy() {
+                if (!manualCheckbox || !updatedByField) return; // Проверяем, есть ли элементы
+        
+                const updatedBySelect = updatedByField.querySelector('select, input[type="hidden"]');
+        
                 if (manualCheckbox.checked) {
                     updatedByField.style.display = 'block';
-                    updatedByField.querySelector('select').disabled = false;
+                    if (updatedBySelect) updatedBySelect.disabled = false;
                 } else {
                     updatedByField.style.display = 'none';
-                    updatedByField.querySelector('select').disabled = true;
+                    if (updatedBySelect) updatedBySelect.disabled = true;
                 }
             }
         
             if (manualCheckbox && updatedByField) {
                 manualCheckbox.addEventListener('change', toggleUpdatedBy);
-                toggleUpdatedBy(); // Инициализация при загрузке
+                toggleUpdatedBy(); // Вызываем при загрузке страницы
             }
         });
     </script>
+        
+        
+        
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             document.querySelectorAll(".currency-input").forEach(input => {

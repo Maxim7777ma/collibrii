@@ -25,11 +25,12 @@ h1 {
     padding: 20px 30px;
     border-radius: 10px;
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-    width: 400px;
+    width: 80%;
     animation: fadeIn 0.5s ease-in-out;
 }
 
 .table-form label {
+    font-size: 2rem;
     display: block;
     margin-top: 10px;
     font-weight: 500;
@@ -38,6 +39,7 @@ h1 {
 
 .table-form input,
 .table-form textarea {
+    font-size: 1.7rem;
     width: 100%;
     padding: 10px;
     margin-top: 5px;
@@ -61,7 +63,7 @@ h1 {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 3rem;
     transition: all 0.3s ease;
 }
 
@@ -119,23 +121,30 @@ h1 {
     background: #f9f9f9;
     cursor: pointer;
 }
+.block_butons {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 4rem;
+    margin-bottom: 4rem;
+}
 
 .btn-save {
-    padding: 10px 20px;
-    background-color: #28a745;
+    padding: 45px 50px;
+    background-color: #0d0200;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 15px;
     cursor: pointer;
 }
 
 .btn-cancel {
-    padding: 10px 20px;
-    background-color: #dc3545;
+    padding: 45px 50px;
+    background-color: #bc0013;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 15px;
     cursor: pointer;
+    text-decoration: none;
 }
 
 .error-messages {
@@ -275,8 +284,8 @@ label {
     margin-top: 20px;
     margin-left: 40%;
     appearance: none;
-    width: 24px;
-    height: 24px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     border: 2px solid #4A4A4A;
     background: white;
@@ -292,7 +301,7 @@ label {
 
 .field-manually_updated input[type="checkbox"]::before {
     content: "✔";
-    font-size: 16px;
+    font-size: 30px;
     font-weight: bold;
     color: white;
     position: absolute;
@@ -308,7 +317,7 @@ label {
 
 /* 🎨 Элегантная типографика */
 .field-manually_updated label {
-    font-size: 16px;
+    font-size: 2.7rem;
     font-weight: 500;
     color: #4A4A4A;
     text-transform: uppercase;
@@ -391,7 +400,7 @@ label {
 /* Убираем скролл */
 .french-style select option {
     background: #fff;
-    font-size: 1rem;
+    font-size: 2rem;
     padding: 8px;
     transition: all 0.2s ease-in-out;
 }
@@ -421,7 +430,7 @@ label {
 #id_priority {
     width: 100%;
     padding: 12px;
-    font-size: 16px;
+    font-size: 1.7rem;
     font-weight: 600;
     background: #fff;
     border: 2px solid #d10000; /* Красная рамка */
@@ -470,7 +479,7 @@ label {
 #id_contact {
     width: 100%;
     padding: 12px;
-    font-size: 16px;
+    font-size: 1.7rem;
     font-weight: 600;
     background: #fff;
     border: 2px solid #d10000; /* Красная рамка */
@@ -518,7 +527,7 @@ label {
 #id_status {
     width: 100%;
     padding: 12px;
-    font-size: 16px;
+    font-size: 1.7rem;
     font-weight: 600;
     background: #fff;
     border: 2px solid #d10000; /* Красная рамка */
@@ -565,9 +574,9 @@ label {
 
 
 #id_change_status_contact {
+    font-size: 1.7rem;
     width: 100%;
     padding: 12px;
-    font-size: 16px;
     font-weight: 600;
     background: #fff;
     border: 2px solid #d10000; /* Красная рамка */
@@ -716,7 +725,7 @@ label {
     }
 
     #id_priority, #id_contact, #id_status, #id_change_status_contact {
-        font-size: 14px;
+        font-size: 1.7rem;
         padding: 10px;
         border-radius: 6px;
     }

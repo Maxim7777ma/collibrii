@@ -239,8 +239,22 @@ def filter_rows(request, table_pk):
 
             local_tz = pytz.timezone("Europe/Kyiv")
 
-            # ✅ Проверяем, передали ли фильтр `instagram_username`
-            
+
+
+            # ✅ Фильтр по instagram_link (учитываем возможные вариации ссылок)
+            if "instagram_link" in data:
+                instagram_link = data["instagram_link"].strip().replace("\n", "").replace("\r", "").replace("\t", "")
+                instagram_link = instagram_link.replace("https://www.", "https://").replace("www.", "")
+
+                # Если передана ссылка, пытаемся извлечь никнейм
+                if "instagram.com/" in instagram_link:
+                    username = instagram_link.split("instagram.com/")[-1].split("?")[0].replace("/", "").strip()
+                    rows = rows.filter(models.Q(instagram_link__icontains=username) | models.Q(instagram_link__icontains=instagram_link))
+                else:
+                    rows = rows.filter(instagram_link__icontains=instagram_link)
+
+
+
             def parse_datetime(date_str, local_tz):
                 if not date_str:
                     return None
@@ -1039,7 +1053,7 @@ def upload_excel(request, table_pk):
             total_rows = len(df)
 
             # ✅ Количество дубликатов (только те, что уже были в БД)
-            duplicate_rows = len(to_delete)
+            duplicate_rows = len(total_rows - uploaded_rows)
 
             # ✅ Количество успешно загруженных новых записей
             uploaded_rows = len(new_entries)

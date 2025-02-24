@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Система</title>
+    <link rel="stylesheet" href="{% static 'css/first.css' %}">
+
+</head>
+<body>
+    <header>
+        <div class="header_fon_black">
+
+        </div>
+        <div class="block-centr_reg">
+            <button class="btn-new-user">Реєстрація</button>
+        </div>
+        <div class="block-centr">
+        <a class="open" href="{% url 'home' %}">ВХІД</a>
+        </div>
+
+        <div class="select-wrapper-lang" >
+            <select class="select-lang" >
+                <option>UK</option>
+                <option>EN</option>
+                <option>RU</option>
+            </select>
+        </div>
+        
+        
+    </header>    
+    
+
+    <div>
+        <div class="b2y-centr-container">
+            <div class="b2y-container">
+                <img src="{% static 'images/phone.png' %}" alt="Логотип">
+            </div>
+            <!-- Нижняя панель -->
+            <div class="b2y-bottom-bar">
+                <div class="b2y-social-icon">
+                    <img src="{% static 'images/insta.png' %}" alt="Instagram">
+                </div>
+                <div class="b2y-social-icon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" alt="YouTube">
+                </div>
+            </div>
+
+            <h3>B2Y-CRM</h3>
+        </div>  
+            
+
+        
+    </div>    
+</body>
+</html>

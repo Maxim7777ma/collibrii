@@ -30,6 +30,29 @@ class CustomRowAdmin(admin.ModelAdmin):
         # Вернёт запятую, через которую перечислим всех юзеров
         return ", ".join([user.username for user in obj.updated_by.all()])
     get_updated_by_users.short_description = "Updated By"
+    
+    def save_model(self, request, obj, form, change):
+        """Принудительно устанавливаем manually_updated = False, если нет прав"""
+        if not request.user.has_perm('clients.can_update_manually'):
+            obj.manually_updated = False
+        super().save_model(request, obj, form, change)
+
+    def get_readonly_fields(self, request, obj=None):
+        """Ограничение полей в зависимости от прав"""
+        readonly = list(self.readonly_fields)  # Список неизменяемых полей
+        if not request.user.has_perm('clients.can_update_manually'):
+            readonly.extend(['manually_updated', 'updated_by'])  # Делаем оба readonly
+        return readonly
+
+    def get_fields(self, request, obj=None):
+        """Скрытие `updated_by`, если нет доступа к `manually_updated`"""
+        fields = super().get_fields(request, obj)
+        readonly = self.get_readonly_fields(request, obj)
+        if 'manually_updated' in readonly:
+            return [field for field in fields if field not in ('manually_updated', 'updated_by')]
+    
+        return fields
+    
 # Удаление старой регистрации CustomRow, если она была
 try:
     admin.site.unregister(CustomRow)

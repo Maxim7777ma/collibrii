@@ -25,5 +25,6 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),  # Логаут
     path('clients/', include('clients.urls')),  # Перенаправление в приложение "clients"
     path('analysis/', include('analysis.urls')),  # Приложение "analysis"
-    path('', auth_views.LoginView.as_view(template_name='clients/login.html'), name='home'),  # Главная страница = логин
+    path('', auth_views.LoginView.as_view(template_name='clients/first.html'), name='first'),  # Главная страница
+    path('login', auth_views.LoginView.as_view(template_name='clients/login.html'), name='home'),  # Главная страница = логин
 ]
