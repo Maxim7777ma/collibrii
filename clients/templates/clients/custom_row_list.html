@@ -1306,6 +1306,76 @@
 </script>
 
     
+<div id="loading-modal" class="loading-modal">
+    <div class="loading-text" id="loading-text">0%</div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const filterButton = document.getElementById("filter-button");
+        const filterForm = document.getElementById("filter-form");
+        const loadingModal = document.getElementById("loading-modal");
+        const loadingText = document.getElementById("loading-text");
+        const resultsCount = document.getElementById("filter-results-count");
+    
+        // ❌ Скрываем окно загрузки при загрузке страницы
+        loadingModal.style.display = "none";
+        loadingModal.style.opacity = "1"; // Убеждаемся, что opacity = 1
+    
+        if (filterButton && filterForm) {
+            filterButton.addEventListener("click", function (event) {
+                event.preventDefault(); // ❌ Останавливаем стандартную отправку формы
+    
+                // ✅ Показываем модальное окно загрузки
+                loadingModal.style.display = "flex";
+                loadingModal.style.opacity = "1"; // Возвращаем видимость перед показом
+                loadingText.textContent = "0%"; // Начинаем с 0%
+    
+                let progress = 0;
+                let interval = setInterval(() => {
+                    progress += Math.floor(Math.random() * 5) + 2; // Медленнее увеличиваем (2-7%)
+                    if (progress > 100) progress = 100;
+                    loadingText.textContent = progress + "%";
+                }, 250); // ⏳ Увеличили интервал (дольше заполняет)
+    
+                // ✅ Отправляем данные через AJAX без перезагрузки страницы
+                let formData = new FormData(filterForm);
+                fetch(filterForm.action, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.text()) // Можно заменить на response.json(), если сервер возвращает JSON
+                .then(() => {
+                    console.log("✅ Фильтр применен");
+    
+                    // ✅ Ждем, пока появится блок с результатами фильтрации
+                    let waitForResults = setInterval(() => {
+                        if (resultsCount && resultsCount.style.display !== "none") {
+                            clearInterval(waitForResults); // Останавливаем проверку
+                            clearInterval(interval); // Останавливаем увеличение процентов
+    
+                            // ✅ Очень плавное исчезновение
+                            loadingModal.style.transition = "opacity 1.5s ease-out"; // Очень плавное исчезновение
+                            loadingModal.style.opacity = "0";
+    
+                            setTimeout(() => {
+                                loadingModal.style.display = "none"; // Полностью скрываем после исчезновения
+                                loadingModal.style.transition = ""; // Сбрасываем transition для будущего использования
+                            }, 1500); // Длительность анимации исчезновения (1.5 секунды)
+                        }
+                    }, 150); // Проверяем каждые 150 мс
+                })
+                .catch(error => {
+                    console.error("❌ Ошибка при отправке:", error);
+                    clearInterval(interval); // Останавливаем анимацию
+                    loadingModal.style.display = "none"; // Скрываем окно при ошибке
+                });
+            });
+        }
+    });
+    
+    
+</script>    
+
     
 
     
