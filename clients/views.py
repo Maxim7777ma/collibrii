@@ -215,6 +215,8 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 def filter_rows(request, table_pk):
     if request.method == "POST":
+        filters = {key: request.GET[key] for key in request.GET if request.GET[key] and key != 'page'}
+
         try:
             # ✅ Декодируем JSON, логируем фильтр
             try:
@@ -240,6 +242,20 @@ def filter_rows(request, table_pk):
             disable_pagination = data.pop("disable_pagination", False)
 
             local_tz = pytz.timezone("Europe/Kyiv")
+
+            
+
+            # ✅ Фильтруем пользователей, которые принадлежат группе ТА обновляли строки в этой таблице
+            if table.group:
+                all_users = list(
+                    User.objects.filter(
+                        groups=table.group,
+                        updated_rows__table=table  # ✅ проверяем связь через related_name (если он есть)
+                    ).distinct().values("id", "username")
+                )
+            else:
+                all_users = []  # Если у таблицы нет группы, пользователей не передаем
+
 
 
 
@@ -286,7 +302,38 @@ def filter_rows(request, table_pk):
                     models.Q(due_date__lte=end_datetime) |
                     models.Q(record_date__lte=end_datetime)
                 )
-            
+
+
+
+        
+            if "updated_by" in data and data["updated_by"]:
+                updated_user_ids = data["updated_by"]
+
+                if isinstance(updated_user_ids, str):
+                    updated_user_ids = updated_user_ids.split(",")
+
+                # ✅ Проверяем, что все значения - числа (ID пользователей)
+                updated_user_ids = [int(uid) for uid in updated_user_ids if str(uid).isdigit()]
+
+                if updated_user_ids:
+                    rows = rows.filter(updated_by__in=updated_user_ids)
+
+                logger.debug(f"Фильтрация по updated_by (ID пользователей): {updated_user_ids}")
+
+
+    
+            filtered_data = [
+                {
+                    "id": row.id,
+                    "updated_by": list(row.updated_by.values_list("username", flat=True)),  # ✅ Исправлено
+                    "status": row.status,
+                    "priority": row.priority
+                }
+                for row in rows
+            ]
+
+            logger.debug(f"📩 Данные перед отправкой: {filtered_data}")
+
             for field, value in data.items():
                 logger.debug(f"🧐 Фильтр: {field} = {value}")  # ✅ Выведет все поля перед фильтрацией
                 if field == "instagram_username":
@@ -340,12 +387,19 @@ def filter_rows(request, table_pk):
                 filtered_data.append(row_data)
             logger.debug(f"📩 Данные перед отправкой: {filtered_data}")
 
+                        # ✅ Сериализация QuerySet в JSON
+
+
             return JsonResponse({
                 "success": True,
                 "data": filtered_data,
                 "disable_pagination": True,
                 "duplicate_usernames": list(duplicate_usernames),
                 "duplicate_phones": list(duplicate_phones),
+                "all_users": all_users,  # ✅ Передаем пользователей в JSON
+                "disable_pagination": disable_pagination,
+                
+
             })
 
         except json.JSONDecodeError:
@@ -474,11 +528,14 @@ def table_rows(request, table_id):
     duplicate_phones = rows.values('phone_number').annotate(count=models.Count('id')).filter(count__gt=1)
     duplicate_phones = [item['phone_number'] for item in duplicate_phones]
 
+    all_users = list(User.objects.values("id", "username"))  # ✅ Добавляем пользователей
+
     return render(request, 'table_rows.html', {
         'table': table,
         'rows': rows,
         'duplicate_usernames': duplicate_usernames,
         'duplicate_phones': duplicate_phones,
+        'all_users': all_users,  # ✅ Передаем в шаблон
     })
 
 # Функция редактирования строки
@@ -572,6 +629,17 @@ def custom_row_list(request, table_id):
 
     # Получаем таблицу
     table = get_object_or_404(CustomTable, id=table_id)
+                # ✅ Фильтруем пользователей, которые принадлежат группе ТА обновляли строки в этой таблице
+    if table.group:
+        all_users = list(
+            User.objects.filter(
+                groups=table.group,
+                updated_rows__table=table  # ✅ проверяем связь через related_name (если он есть)
+            ).distinct().values("id", "username")
+        )
+    else:
+        all_users = []  # Если у таблицы нет группы, пользователей не передаем
+
     translations = {
         "status": {"lead": "Лід", "client": "Клієнт", "customer": "Замовник"},
         "contact": {"contact_1": "Контакт 1", "contact_2": "Контакт 2", "contact_3": "Контакт 3", "contact_4": "Контакт 4"},
@@ -592,7 +660,7 @@ def custom_row_list(request, table_id):
         {"name": field["name"], "label": FIELD_TRANSLATIONS.get(field["name"], field["name"])}
         for field in visible_fields if isinstance(field, dict)
     ]
-
+    
     # Определяем поля, которые можно фильтровать через select
     select_fields = ["contact", "status", "priority", "change_status_contact"]
     allowed_fields = [field["name"] for field in visible_fields if field["name"] in select_fields]
@@ -610,8 +678,22 @@ def custom_row_list(request, table_id):
     for key, value in filters.items():
         query &= Q(**{f"{key}__icontains": value})
 
+    filters = Q()
+
+    if "updated_by" in request.GET and request.GET["updated_by"]:
+        updated_by_value = request.GET["updated_by"]
+    
+        if updated_by_value.isdigit():
+            filters &= Q(updated_by=int(updated_by_value))
+        else:
+            user = User.objects.filter(username__icontains=updated_by_value).first()
+            if user:
+                filters &= Q(updated_by=user.id)
+            else:
+                return render(request, "clients/custom_row_list.html", {"rows": CustomRow.objects.none()})
+
     # Получаем отфильтрованные строки
-    rows = CustomRow.objects.filter(query).order_by("-id")
+    rows = CustomRow.objects.filter(filters).order_by("-id")
 
     # --- 🔹 ПОИСК ДУБЛИКАТОВ (по всей таблице) ---
     all_rows = CustomRow.objects.filter(table=table)
@@ -628,6 +710,7 @@ def custom_row_list(request, table_id):
 
     # --- 🔹 ПАГИНАЦИЯ (по 20 строк) — ОТКЛЮЧЕНИЕ ПАГИНАЦИИ, ЕСЛИ ФИЛЬТРЫ ПРИМЕНЕНЫ
     paginator = None
+
     if not filters:  # Если фильтры не применены, используем пагинацию
         paginator = Paginator(rows, 20)
         page = request.GET.get("page")
@@ -637,6 +720,8 @@ def custom_row_list(request, table_id):
             rows = paginator.page(1)
         except EmptyPage:
             rows = paginator.page(paginator.num_pages)
+
+
 
     # --- 🔹 ОБРАБОТКА additional_data (JSON поля) ---
     for row in rows:
@@ -671,6 +756,7 @@ def custom_row_list(request, table_id):
         "current_page": 1 if paginator else 1,  # Если пагинация отсутствует, делаем страницу 1
         "total_pages": 1 if paginator is None else paginator.num_pages,  # Если пагинация отсутствует, страница одна
         "translations": translations,  # Добавь в контекст!
+        "all_users": all_users,  # ✅ Теперь передаём список пользователей!
     })
 
 
@@ -765,7 +851,7 @@ def client_list_leads(request):
     return render(request, 'clients/client_list.html', {
         'clients': clients,
         'managers': managers,
-        'duplicate_links': duplicate_links
+        'duplicate_links': duplicate_links,
     })
 
 

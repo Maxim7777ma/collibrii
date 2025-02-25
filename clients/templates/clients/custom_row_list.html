@@ -28,7 +28,7 @@
     
             <!-- Оставшиеся текстовые и выпадающие фильтры -->
             {% for field in visible_fields %}
-                {% if field.name not in "last_updated inquiry_date due_date record_date" %}
+                {% if field.name not in "last_updated inquiry_date due_date record_date updated_by" %}
                     <div class="filter-group">
                         <label for="filter-{{ field.name }}">{{ field.label }}</label>
                         {% if field.name in allowed_fields %}
@@ -45,6 +45,18 @@
                 {% endif %}
                 <!-- Поле "Дата початку" -->
             {% endfor %}
+            <div class="filter-group">
+                <label for="filter-updated_by">Оновлено користувачем</label>
+                <select id="filter-updated_by" name="updated_by" class="filter-dropdown" multiple data-table-id="{{ table.id }}">
+                    <option value="">Всі</option>
+                    {% for user in all_users %}
+                        <option value="{{ user.id }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+
+
             <div class="filter-group">
                 <label for="filter-start_datetime">Дата початку</label>
                 <input type="datetime-local" id="filter-start_datetime" name="start_datetime">
@@ -484,6 +496,7 @@
             const filterForm = document.getElementById("filter-form");
             const resetFiltersButton = document.getElementById("reset-filters");
             const tableElement = document.getElementById("data-table");
+            const updatedByFilter = document.getElementById("filter-updated_by");
             const translations = {
                 "статус": {
                     "Лід": "lead",
@@ -503,6 +516,24 @@
                 }
             };
     
+            if (updatedByFilter) {
+                updatedByFilter.addEventListener("change", function () {
+                    let selectedValues = Array.from(this.selectedOptions).map(opt => opt.value);
+                    let queryParams = new URLSearchParams(window.location.search);
+                    
+                    // Удаляем все старые параметры updated_by перед добавлением новых
+                    queryParams.delete("updated_by");
+            
+                    // Добавляем каждый выбранный ID в параметры запроса отдельно
+                    selectedValues.forEach(value => queryParams.append("updated_by", value));
+            
+                    // Обновляем URL и отправляем запрос
+                    window.history.pushState({}, "", "?" + queryParams.toString());
+                    sendFilterRequest();  // ✅ Вызываем обновление данных
+                });
+            }
+            
+        
             // ✅ Проверяем существование элементов перед назначением обработчиков
             if (filterButton) {
                 filterButton.addEventListener('click', function () {
