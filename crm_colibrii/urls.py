@@ -19,6 +19,15 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 
 
+from django.shortcuts import render
+from medicalCRM.views import (
+    VisitListCreateView, NurseListView, ServiceListView, 
+    DoctorListView, PatientListView,UpdateVisitView
+)
+
+# Функция рендеринга страницы календаря
+def calendar_view(request):
+    return render(request, 'medicalCRM/calendar.html')
 urlpatterns = [
     path('admin/', admin.site.urls),  # Админка
     path('login/', auth_views.LoginView.as_view(template_name='clients/login.html'), name='login'),  # Логин
@@ -26,5 +35,13 @@ urlpatterns = [
     path('clients/', include('clients.urls')),  # Перенаправление в приложение "clients"
     path('analysis/', include('analysis.urls')),  # Приложение "analysis"
     path('', auth_views.LoginView.as_view(template_name='clients/first.html'), name='first'),  # Главная страница
+    path('medicalCRM/', include('medicalCRM.urls')), 
+    path('api/visits/<int:pk>/', UpdateVisitView.as_view(), name='update_visit'),
+    path('api/visits/', VisitListCreateView.as_view(), name='visits'),
+    path('api/nurses/', NurseListView.as_view(), name='nurses'),
+    path('api/services/', ServiceListView.as_view(), name='services'),
+    path('api/doctors/', DoctorListView.as_view(), name='doctors'),
+    path('api/patients/', PatientListView.as_view(), name='patients'),
+    path('calendar/', calendar_view, name='calendar'), 
     path('login', auth_views.LoginView.as_view(template_name='clients/login.html'), name='home'),  # Главная страница = логин
 ]

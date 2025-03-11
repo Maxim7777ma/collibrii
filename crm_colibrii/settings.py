@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,6 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'clients',
     'analysis',
+    'rest_framework',  # Подключаем REST framework
+    'corsheaders',  # Подключаем CORS
+    'medicalCRM', 
 ]
 
 MIDDLEWARE = [
@@ -49,11 +53,13 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Подключаем CORS
 ]
 
 ROOT_URLCONF = 'crm_colibrii.urls'
 
 TEMPLATES = [
+
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
@@ -126,8 +132,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    BASE_DIR / "clients" / "static",
+    BASE_DIR / "medicalCRM" / "static",
 ]
 
 LOGIN_REDIRECT_URL = '/'
@@ -135,8 +143,15 @@ LOGIN_URL = '/login/'  # Путь для страницы логина
 LOGIN_REDIRECT_URL = '/clients/'  # Переход после успешного входа
 LOGOUT_REDIRECT_URL = '/login/'  # Переход после выхода
 
-
+#crm_colibrii/clients/templates/clients/custom_row_list.html
  # Добавь локальный адрес
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:8000",
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

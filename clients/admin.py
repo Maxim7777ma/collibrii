@@ -61,3 +61,6 @@ except admin.sites.NotRegistered:
 
 # Регистрация CustomRow с использованием CustomRowAdmin
 admin.site.register(CustomRow, CustomRowAdmin)
+
+
+

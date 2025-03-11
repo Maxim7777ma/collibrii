@@ -27,7 +27,7 @@ header {
     justify-content: space-between;
     
     /* Применяем анимацию */
-    animation: slideInLeft 5s ease-out;
+    animation: slideInLeft 2.3s ease-out;
 }
 
 
@@ -149,7 +149,24 @@ body {
     margin-top: 200px;
     justify-content: space-between;
 }
-        /* Контейнер для телефона */
+
+
+
+
+
+@keyframes slideUp {
+    0% {
+        transform: translateY(100vh);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+
+  /* Контейнер для телефона */
         .b2y-container {
             position: relative;
             width: 25%;
@@ -163,6 +180,7 @@ body {
             border: none;
             /* margin-left: 2rem; */
             background: linear-gradient(180deg, rgb(239 26 0 / 0%) 8.96%, #EF1A01 79.32%);
+            animation: slideUp 2.2s ease-out forwards;
         }
 
         /* Фон текста B2Y-CRM */

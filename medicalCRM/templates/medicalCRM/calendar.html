@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Календарь записей</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f9fa;
+            margin: 20px;
+        }
+        h1 { font-size: 24px; }
+        #calendar { width: 90%; height: 800px; margin: auto; border: 1px solid #ccc; border-radius: 10px; background: white; }
+        .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        button { padding: 10px 15px; font-size: 16px; cursor: pointer; border: none; background: #007bff; color: white; border-radius: 5px; }
+        button:hover { background: #0056b3; }
+        .modal { display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; box-shadow: 0px 0px 10px rgba(0,0,0,0.5); width: 400px; }
+        .modal.active { display: block; }
+        select, input { width: 100%; margin-top: 5px; padding: 8px; }
+        .error { color: red; font-size: 14px; }
+        
+        .error-input {
+            border: 2px solid red !important;
+            background-color: #ffe6e6;
+        }
+        
+    </style>
+</head>
+<body>
+    <h1>Календарь записей</h1>
+
+    <div class="controls">
+        <button data-nav="prev">⬅ Назад</button>
+        <button data-nav="next">Вперед ➡</button>
+        <button data-view="day">День</button>
+        <button data-view="week">Неделя</button>
+        <button data-view="month">Месяц</button>
+        <button data-action="reload">🔄 Обновить</button>
+    </div>
+
+    <div id="calendar"></div>
+
+    <!-- Модальное окно создания записи -->
+    <div id="modal" class="modal">
+        <h2>Создать запись</h2>
+        <div id="error-message" class="error"></div>
+        <label>Пациент:
+            <select id="patientSelect"></select>
+        </label>
+        <label>Врач:
+            <select id="doctorSelect"></select>
+        </label>
+        <label>Медсестра:
+            <select id="nurseSelect"></select>
+        </label>
+        <label>Дата визита:
+            <input type="date" id="visitDate">
+        </label>
+        <label>Время визита:
+            <input type="time" id="visitTime">
+        </label>
+
+        <label>Продолжительность визита:
+            <select id="durationSelect">
+                <option value="5">5 минут</option>
+                <option value="10">10 минут</option>
+                <option value="15">15 минут</option>
+                <option value="20">20 минут</option>
+                <option value="30">30 минут</option>
+                <option value="45">45 минут</option>
+                <option value="50">50 минут</option>
+                <option value="55">55 минут</option>
+                <option value="60">1 час</option>
+                <option value="custom">Более...</option>
+            </select>
+        </label>
+        <label>Окончание визита:
+            <input type="time" id="visitEndTime" disabled>
+        </label>
+        
+        <label>Услуги:
+            <select id="servicesSelect" multiple></select>
+        </label>
+        <label>Филиал:
+            <select id="branchSelect" onchange="updateRooms()"></select>
+        </label>
+        
+        <label>Кабинет:
+            <select id="roomSelect"></select>
+        </label>
+        <label>Общая стоимость:
+            <input type="number" id="totalPrice" step="0.01">
+        </label>
+        <label>Описание:
+            <textarea id="description" rows="3"></textarea>
+        </label>
+        <label>Статус:
+            <select id="statusSelect">
+                <option value="pending">В обработке</option>
+                <option value="paid">Предоплата</option>
+                <option value="completed">Проведено</option>
+                <option value="paid_finish">Оплачено</option>
+            </select>
+        </label>
+        <label>
+            <input type="checkbox" id="isOnline"> Онлайн прием
+        </label>
+        
+        <button id="createVisitBtn">Создать</button>
+        <button onclick="closeModal()">Отмена</button>
+        
+    </div>
+
+    <!-- Подключаем TUI Calendar -->
+    <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+    <script>
+        function closeModal() {
+            document.getElementById("modal").classList.remove("active");
+            document.getElementById("error-message").innerText = ""; // Очистка ошибок
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            console.log("📢 Инициализация календаря...");
+
+            const calendar = new tui.Calendar("#calendar", {
+                defaultView: "week", // По умолчанию неделя
+                useCreationPopup: false,
+                useDetailPopup: true,
+                isReadOnly: false,
+                draggable: true,
+                resizable: true,
+                week: { 
+                    startDayOfWeek: 1, // Неделя начинается с Понедельника
+                    hourStart: 0,       // Время с 00:00
+                    hourEnd: 24,        // До 24:00
+                    timeGridHourFormat: 'HH:mm' // 🔥 Время отображается в формате 24 часов (например, 13:00 вместо 1PM)
+                },
+                day: {
+                    hourStart: 0,
+                    hourEnd: 24,
+                    timeGridHourFormat: "HH:mm" // 🔥 Для дневного вида тоже 24-часовой формат
+                },
+                month: { 
+                    daynames: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб","Вс"] 
+                }
+            });
+
+            // ✅ Функция смены вида (День / Неделя / Месяц)
+            function changeView(view) {
+                calendar.changeView(view); // Меняет вид календаря
+            }
+
+            // ✅ Обработчики кнопок смены вида
+            document.querySelector("button[data-view='day']").addEventListener("click", function() {
+                changeView("day");
+            });
+            document.querySelector("button[data-view='week']").addEventListener("click", function() {
+                changeView("week");
+            });
+            document.querySelector("button[data-view='month']").addEventListener("click", function() {
+                changeView("month");
+            });
+
+            function getCSRFToken() {
+                return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+
+            function showError(message) {
+                document.getElementById("error-message").innerText = message;
+            }
+
+            function loadSelectOptions(url, selectId, formatFunction) {
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        let select = document.getElementById(selectId);
+                        select.innerHTML = data.map(formatFunction).join("");
+                    })
+                    .catch(error => console.error("Ошибка загрузки:", error));
+            }
+
+            function formatServiceOption(service) {
+                return `<option value="${service.id}">${service.service_code} - ${service.service_name} - ${service.service_price} грн</option>`;
+            }
+
+            function formatUserOption(user) {
+                return `<option value="${user.id}">${user.full_name || user.fool_name}</option>`;
+            }
+            function loadBranches() {
+                fetch("/medicalCRM/api/branches/", { credentials: "include" })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Ошибка загрузки филиалов: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        let branchSelect = document.getElementById("branchSelect");
+                        branchSelect.innerHTML = data.map(branch => 
+                            `<option value="${branch.id}">${branch.branch_name}</option>`
+                        ).join("");
+            
+                        if (data.length > 0) {
+                            branchSelect.value = data[0].id;
+                            updateRooms();
+                        }
+                    })
+                    .catch(error => console.error("Ошибка загрузки филиалов:", error));
+            }
+            
+            function updateRooms() {
+                let branchId = document.getElementById("branchSelect").value;
+                if (!branchId) return;
+            
+                fetch("/medicalCRM/api/rooms/?branch=" + branchId)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Ошибка HTTP: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (!Array.isArray(data)) {
+                            throw new Error("Некорректный формат данных: ожидается массив");
+                        }
+            
+                        let roomSelect = document.getElementById("roomSelect");
+                        roomSelect.innerHTML = data.map(room => 
+                            `<option value="${room.id}">${room.room_number}</option>`
+                        ).join("");
+                    })
+                    .catch(error => console.error("Ошибка загрузки кабинетов:", error));
+            }
+            
+
+            function loadVisits() {
+                fetch("/api/visits/")
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("📥 Загруженные визиты:", data);  // Проверяем API
+                        let schedules = data.map(v => ({
+                            id: v.id.toString(),
+                            title: `${v.patient_name} - ${v.doctor_name || "?"}`,
+                            category: "time",
+                            start: v.visit_date + "T" + v.visit_time,
+                            end: v.visit_date + "T" + (v.visit_end_time || v.visit_time), // ✅ Исправлено (заменили `=` на `:`)
+                            bgColor: "#36A2EB"
+                        }));
+                        calendar.clear();
+                        calendar.createEvents(schedules);
+                    })
+                    .catch(error => console.error("Ошибка загрузки API:", error));
+            }
+            // ✅ Кнопки для смены периода (Назад / Вперед)
+            document.querySelector("button[data-nav='prev']").addEventListener("click", function() {
+                calendar.prev();
+            });
+            document.querySelector("button[data-nav='next']").addEventListener("click", function() {
+                calendar.next();
+            });
+
+            // ✅ Кнопка обновления событий
+            document.querySelector("button[data-action='reload']").addEventListener("click", function() {
+                loadVisits();
+            });
+
+            function openModal() {
+                document.getElementById("modal").classList.add("active");
+                loadSelectOptions("/api/doctors/", "doctorSelect", formatUserOption);
+                loadSelectOptions("/api/patients/", "patientSelect", formatUserOption);
+                loadSelectOptions("/api/nurses/", "nurseSelect", formatUserOption);
+                loadSelectOptions("/api/services/", "servicesSelect", formatServiceOption);
+                loadBranches();
+            }
+
+            document.getElementById("durationSelect").addEventListener("change", function() {
+                let endTimeInput = document.getElementById("visitEndTime");
+            
+                if (this.value === "custom") {
+                    endTimeInput.removeAttribute("disabled"); // ✅ Разрешаем ввод вручную
+                } else {
+                    endTimeInput.setAttribute("disabled", "true"); // ❌ Блокируем ввод
+                    let visitTimeInput = document.getElementById("visitTime").value;
+                    if (!visitTimeInput) {
+                        alert("Сначала выберите время начала приёма!");
+                        this.value = "custom"; // Возвращаем к "Более..."
+                        return;
+                    }
+            
+                    let [hours, minutes] = visitTimeInput.split(":").map(Number);
+                    let durationMinutes = parseInt(this.value);
+                    let endMinutes = minutes + durationMinutes;
+            
+                    // Пересчитываем время
+                    if (endMinutes >= 60) {
+                        hours += Math.floor(endMinutes / 60);
+                        endMinutes = endMinutes % 60;
+                    }
+            
+                    endTimeInput.value = `${String(hours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+                }
+            });
+            
+            
+            // ✅ Позволяем вручную задавать время окончания и пересчитываем длительность
+            document.getElementById("visitEndTime").addEventListener("change", function () {
+                let visitTimeInput = document.getElementById("visitTime").value;
+                let visitEndTimeInput = this.value;
+            
+                if (!visitTimeInput || !visitEndTimeInput) return;
+            
+                let [startHours, startMinutes] = visitTimeInput.split(":").map(Number);
+                let [endHours, endMinutes] = visitEndTimeInput.split(":").map(Number);
+            
+                let totalMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+
+                // ❌ Но не показываем alert сразу! Проверим это перед отправкой формы
+                if (totalMinutes <= 0) {
+                    this.dataset.invalid = "true"; // Помечаем, что значение некорректное
+                } else {
+                    delete this.dataset.invalid; // Если всё ок, удаляем атрибут
+                }
+            
+                document.getElementById("durationSelect").value = "custom"; // Если вручную вводим, ставим "Более..."
+            });
+            
+            // ✅ Позволяем растягивать событие в календаре и обновлять длительность
+            calendar.on("beforeUpdateEvent", function ({ event, changes }) {
+                console.log("🛠 Обновление события:", event, changes);
+            
+                let visitId = parseInt(event.id);
+                if (isNaN(visitId) || visitId < 1) {
+                    console.error("❌ Ошибка: некорректный visitId", event);
+                    return;
+                }
+            
+                let updatedData = {};
+            
+                // ✅ Перетаскивание (изменение дня и времени начала)
+                if (changes.start) {
+                    let newStart = new Date(changes.start);
+                    updatedData.visit_date = newStart.toISOString().split("T")[0]; // Новая дата
+                    updatedData.visit_time = formatTime(newStart); // Новое время начала
+                }
+            
+                // ✅ Если изменилось время окончания (значит событие растянули)
+                if (changes.end) {
+                    let newEnd = new Date(changes.end);
+                    let newStart = new Date(event.start);
+            
+                    let durationMinutes = Math.round((newEnd - newStart) / (1000 * 60));
+            
+                    
+                    // 🔥 Если разница в минутах отрицательная, исправляем её
+                    if (durationMinutes < 1) {
+                        console.error("❌ Ошибка: duration_minutes < 1! Исправляем на 5 минут...");
+                        durationMinutes = 5; // Минимальная длительность 5 минут
+                    }  
+            
+                    updatedData.visit_end_time = formatTime(newEnd);
+                    updatedData.duration_minutes = durationMinutes;
+                }
+
+
+            
+                // ✅ Отправляем изменения на сервер
+                updateVisitOnServer(visitId, updatedData);
+            
+                // ✅ Визуально обновляем событие в календаре (без перезагрузки страницы)
+                calendar.updateEvent(event.id, event.calendarId, {
+                    start: changes.start || event.start,
+                    end: changes.end || event.end
+                });
+            });
+            
+            
+            // Функция форматирования времени в HH:mm
+            function formatTime(dateInput) {
+                let dateObj = new Date(dateInput);
+                let hours = String(dateObj.getHours()).padStart(2, "0");
+                let minutes = String(dateObj.getMinutes()).padStart(2, "0");
+                return `${hours}:${minutes}`;
+            }
+            
+            
+            function createVisit() {
+                let visitTimeInput = document.getElementById("visitTime");
+                let visitEndTimeInput = document.getElementById("visitEndTime");
+                let selectedDuration = document.getElementById("durationSelect").value;
+                let selectedServices = Array.from(document.getElementById("servicesSelect").selectedOptions).map(o => o.value);
+            
+                let requiredFields = [
+                    { id: "patientSelect", message: "Выберите пациента" },
+                    { id: "doctorSelect", message: "Выберите врача" },
+                    { id: "visitDate", message: "Выберите дату визита" },
+                    { id: "visitTime", message: "Выберите время начала визита" }
+                ];
+            
+                document.querySelectorAll(".error-input").forEach(field => {
+                    field.classList.remove("error-input");
+                });
+            
+                let missingFields = [];
+            
+                requiredFields.forEach(field => {
+                    let inputElement = document.getElementById(field.id);
+                    if (!inputElement.value) {
+                        inputElement.classList.add("error-input");
+                        missingFields.push(field.message);
+                    }
+                });
+            
+                if (missingFields.length > 0) {
+                    alert("Заполните обязательные поля:\n- " + missingFields.join("\n- "));
+                    return;
+                }
+            
+                let [startHours, startMinutes] = visitTimeInput.value.split(":").map(Number);
+                let visit_end_time = visitEndTimeInput.value || "";
+                let duration_minutes = null;
+            
+                if (selectedDuration !== "custom") {
+                    let duration = parseInt(selectedDuration);
+                    let endMinutes = startMinutes + duration;
+            
+                    if (endMinutes >= 60) {
+                        startHours += Math.floor(endMinutes / 60);
+                        endMinutes = endMinutes % 60;
+                    }
+            
+                    visit_end_time = `${String(startHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+                    duration_minutes = duration;
+                }
+            
+                if (selectedDuration === "custom" && visitEndTimeInput.value) {
+                    let [endHours, endMinutes] = visitEndTimeInput.value.split(":").map(Number);
+                    let startTimeInMinutes = startHours * 60 + startMinutes;
+                    let endTimeInMinutes = endHours * 60 + endMinutes;
+            
+                    if (endTimeInMinutes <= startTimeInMinutes) {
+                        alert("Время окончания должно быть позже времени начала!");
+                        visitEndTimeInput.classList.add("error-input");
+                        return;
+                    }
+            
+                    duration_minutes = endTimeInMinutes - startTimeInMinutes;
+                }
+            
+                // 🛠 **Исправление передачи `services`**
+                let servicesToSend = selectedServices.length > 0 ? selectedServices : [];
+            
+                let visitData = {
+                    patient: document.getElementById("patientSelect").value,
+                    doctor: document.getElementById("doctorSelect").value || null,
+                    nurse: document.getElementById("nurseSelect").value || null,
+                    visit_date: document.getElementById("visitDate").value,
+                    visit_time: visitTimeInput.value,
+                    visit_end_time: visit_end_time,
+                    duration_minutes: duration_minutes ?? null,
+                    services: servicesToSend,  // ✅ Теперь если пусто, отправляем `[]`
+                    total_price: parseFloat(document.getElementById("totalPrice").value) || 0.00,
+                    payment_status: document.getElementById("statusSelect").value,
+                    is_online: document.getElementById("isOnline").checked,
+                    description: document.getElementById("description").value,
+                    clinic_branch: document.getElementById("branchSelect").value,
+                    clinic_room: document.getElementById("roomSelect").value
+                };
+            
+                console.log("📤 Отправка данных:", visitData);
+            
+                fetch("/api/visits/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-CSRFToken": getCSRFToken() },
+                    body: JSON.stringify(visitData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errData => {
+                            console.error("❌ Ошибка сервера:", errData);
+                            alert("Ошибка создания визита: " + JSON.stringify(errData));
+                            throw new Error("Bad Request");
+                        });
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    closeModal();
+                    loadVisits();
+                })
+                .catch(error => console.error("Ошибка создания визита!", error));
+            }
+
+            // ✅ Добавляем обработчик для перетаскивания и изменения размера событий
+            calendar.on("beforeUpdateEvent", function ({ event, changes }) {
+                console.log("🛠 Обновление события:", event);
+            
+                let visitId = parseInt(event.id);
+                if (isNaN(visitId) || visitId < 1) {
+                    console.error("❌ Ошибка: некорректный visitId", event);
+                    return;
+                }
+            
+                let updatedData = {};
+                if (changes.start) {
+                    let newStart = new Date(changes.start);
+                    updatedData.visit_date = newStart.toISOString().split("T")[0];
+                    updatedData.visit_time = formatTime(newStart);
+                }
+            
+                if (changes.end) {
+                    let newEnd = new Date(changes.end);
+                    updatedData.visit_end_time = formatTime(newEnd);
+                    updatedData.duration_minutes = Math.round((newEnd - new Date(event.start)) / (1000 * 60));
+                }
+            
+                updateVisitOnServer(visitId, updatedData);
+            });
+
+            // ✅ Функция обновления данных в API
+            function updateVisitOnServer(visitId, updatedData) {
+                    // 🛠 Исправляем отрицательную продолжительность
+                if (updatedData.duration_minutes < 0) {
+                    console.error("❌ Ошибка: duration_minutes < 0! Данные не отправлены:", updatedData);
+                    return;
+                }
+                console.log("📤 Отправляем обновление:", updatedData);  // Проверяем в консоли
+                fetch(`/api/visits/${visitId}/`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken()
+                    },
+                    body: JSON.stringify(updatedData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Ошибка обновления визита!");
+                        return response.json().then(errData => {
+                            console.error("❌ Ошибка сервера:", errData);
+                            alert("Ошибка обновления визита: " + JSON.stringify(errData));
+                            throw new Error("Ошибка обновления визита!");
+                        });
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    loadVisits(); // Обновляем календарь после успешного сохранения
+                })
+                .catch(error => console.error("❌ Ошибка обновления:", error));
+            }
+
+            // ✅ Функция форматирования времени в HH:mm
+            function formatTime(dateObj) {
+                let hours = String(dateObj.getHours()).padStart(2, "0");
+                let minutes = String(dateObj.getMinutes()).padStart(2, "0");
+                return `${hours}:${minutes}`;
+            }
+
+            
+            
+            
+            document.getElementById("createVisitBtn").addEventListener("click", createVisit);
+
+            calendar.on("selectDateTime", function () {
+                openModal();
+            });
+
+            loadVisits();
+        });
+    </script>
+</body>
+</html>

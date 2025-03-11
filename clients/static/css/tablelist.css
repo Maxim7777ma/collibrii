@@ -742,25 +742,9 @@ a{
     animation: fadeInDown 1s ease-in-out forwards;
 }
 
-/* 🟦 Блок с дубликатами */
-.duplicates-block {
-    background: rgba(230, 240, 255, 0.2);
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(150, 170, 200, 0.15);
-    opacity: 0;
-    animation: fadeIn 1.2s ease-in-out forwards;
-}
 
-/* 💠 Блок с новыми записями */
-.new-entries-block {
-    background: rgba(220, 235, 255, 0.2);
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(120, 140, 180, 0.15);
-    opacity: 0;
-    animation: fadeIn 1.4s ease-in-out forwards;
-}
+
+
 
 /* 🌊 Горизонтальная линия */
 .divider {
