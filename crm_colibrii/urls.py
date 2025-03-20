@@ -22,7 +22,7 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import render
 from medicalCRM.views import (
     VisitListCreateView, NurseListView, ServiceListView, 
-    DoctorListView, PatientListView,UpdateVisitView
+    DoctorListView, PatientListView,UpdateVisitView,BranchListView, RoomListView
 )
 
 # Функция рендеринга страницы календаря
@@ -40,6 +40,8 @@ urlpatterns = [
     path('api/visits/', VisitListCreateView.as_view(), name='visits'),
     path('api/nurses/', NurseListView.as_view(), name='nurses'),
     path('api/services/', ServiceListView.as_view(), name='services'),
+    path("api/branches/", BranchListView.as_view(), name="branch_list"),
+    path("api/rooms/", RoomListView.as_view(), name="room_list"),
     path('api/doctors/', DoctorListView.as_view(), name='doctors'),
     path('api/patients/', PatientListView.as_view(), name='patients'),
     path('calendar/', calendar_view, name='calendar'), 

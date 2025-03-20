@@ -1,14 +1,18 @@
 from rest_framework import serializers
 from .models import Nurse, ServicePriceList, VisitRecord, Doctor, Pacient,ClinicRoom,ClinicBranch
+from rest_framework.generics import RetrieveUpdateAPIView
 
 class VisitRecordSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.fool_name', read_only=True)
     doctor_name = serializers.CharField(source='doctor.fool_name', read_only=True)
     nurse_name = serializers.CharField(source='nurse.fool_name', read_only=True)
 
+
     class Meta:
         model = VisitRecord
         fields = '__all__'  # Теперь используем все поля
+    
+
 
 class NurseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,10 +22,10 @@ class NurseSerializer(serializers.ModelSerializer):
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServicePriceList
-        fields = ["id", "service_code", "service_name", "service_price"]
-
+        fields = ["id", "subgroup_number", "subgroup_name", "service_code", "service_name", "service_price"]
+    
     def get_service_info(self, obj):
-        return f"{obj.service_code} - {obj.service_name} ({obj.service_price} грн)"
+        return f"[{obj.subgroup_number}] {obj.subgroup_name} → {obj.service_code} - {obj.service_name} ({obj.service_price} грн)"
 
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,17 +38,6 @@ class PatientSerializer(serializers.ModelSerializer):
         fields = ['id', 'fool_name']
 
 
-class VisitSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source='patient.fool_name', read_only=True)
-    doctor_name = serializers.CharField(source='doctor.fool_name', read_only=True)
-    nurse_name = serializers.CharField(source='nurse.fool_name', read_only=True)
-
-    class Meta:
-        model = VisitRecord
-        fields = '__all__'  # Используем все поля
-
-
-
 class ClinicBranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClinicBranch
@@ -53,4 +46,48 @@ class ClinicBranchSerializer(serializers.ModelSerializer):
 class ClinicRoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClinicRoom
-        fields = "__all__"        
+        fields = "__all__"  
+
+     
+
+
+class VisitSerializer(serializers.ModelSerializer):
+    """Сериализатор для визита с поддержкой отображения названий и передачи ID"""
+    
+    # ✅ Читаем названия филиала и кабинета
+    clinic_branch_name = serializers.CharField(source="clinic_branch.branch_name", read_only=True)
+    clinic_room_number = serializers.CharField(source="clinic_room.room_number", read_only=True)
+
+    # ✅ Читаем имена
+    patient_name = serializers.CharField(source='patient.fool_name', read_only=True)
+    doctor_name = serializers.CharField(source='doctor.fool_name', read_only=True)
+    nurse_name = serializers.CharField(source='nurse.fool_name', read_only=True)
+
+    # ✅ Читаем услуги как список строк
+    services = serializers.SerializerMethodField()
+
+    # ✅ Передаём ID при обновлении через `PrimaryKeyRelatedField`
+    clinic_branch = serializers.PrimaryKeyRelatedField(
+        queryset=ClinicBranch.objects.all(), write_only=True
+    )
+    clinic_room = serializers.PrimaryKeyRelatedField(
+        queryset=ClinicRoom.objects.all(), write_only=True
+    )
+    
+    services_ids = serializers.PrimaryKeyRelatedField(
+        queryset=ServicePriceList.objects.all(), many=True, source="services", write_only=True
+    )
+
+    class Meta:
+        model = VisitRecord
+        fields = '__all__'
+
+    def get_services(self, obj):
+        """Отображаем услуги в читаемом виде"""
+        return [f"[{s.subgroup_number}] {s.subgroup_name} → {s.service_code} - {s.service_name} ({s.service_price} грн)" for s in obj.services.all()]
+
+
+class UpdateVisitView(RetrieveUpdateAPIView):  # ✅ Теперь поддерживает и GET, и PATCH
+    """API для получения и обновления визита"""
+    queryset = VisitRecord.objects.all()
+    serializer_class = VisitSerializer   

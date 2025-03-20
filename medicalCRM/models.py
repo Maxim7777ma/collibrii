@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import date
-
+from datetime import datetime,timedelta
 
 
 
@@ -9,18 +9,20 @@ from django.db import models
 
 
 
-# 📌 Модель для услуг с уникальным кодом
 class ServicePriceList(models.Model):
-    service_code = models.CharField(max_length=50, unique=True, verbose_name="Код услуги")  # Уникальный код услуги
-    service_name = models.CharField(max_length=255, verbose_name="Название услуги")  # Название услуги
-    service_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена услуги")  # Стоимость
+    subgroup_number = models.CharField(max_length=20, verbose_name="Номер подгруппы")  # 🔹 Добавлен default
+    subgroup_name = models.CharField(max_length=255, default="Без подгруппы", verbose_name="Название подгруппы")  # 🔹 Добавлен default
+    service_code = models.CharField(max_length=50, unique=True, verbose_name="Код услуги")
+    service_name = models.CharField(max_length=255, verbose_name="Название услуги")
+    service_price = models.DecimalField(max_digits=20, decimal_places=2, verbose_name="Цена услуги")
 
     def __str__(self):
-        return f"{self.service_code} - {self.service_name} ({self.service_price} грн)"
+        return f"{self.subgroup_number} {self.subgroup_name} → {self.service_code} - {self.service_name} ({self.service_price} грн)"
 
     class Meta:
         verbose_name = "Прайс-лист услуги"
         verbose_name_plural = "Прайс-лист услуг"
+        ordering = ['subgroup_number', 'service_code']
 
 # 📌 Модель филиала клиники
 class ClinicBranch(models.Model):
@@ -219,26 +221,39 @@ class VisitRecord(models.Model):
     )  # Кабинет внутри филиала
 
     def save(self, *args, **kwargs):
-        """Автоматически рассчитываем `visit_end_time` при сохранении"""
-        if self.visit_time and self.duration_minutes:
-            from datetime import timedelta, datetime
-            if isinstance(self.visit_date, str):
-                self.visit_date = datetime.strptime(self.visit_date, "%Y-%m-%d").date()
+        """✅ Исправленный метод `save()`, который обрабатывает формат времени и рассчитывает `visit_end_time`"""
+        if isinstance(self.visit_time, str):
+            try:
+                # 🔥 Если время без секунд, добавляем их
+                if len(self.visit_time) == 5:
+                    self.visit_time = datetime.strptime(self.visit_time, "%H:%M").time()
+                else:
+                    self.visit_time = datetime.strptime(self.visit_time, "%H:%M:%S").time()
+            except ValueError:
+                pass  # Если ошибка, оставляем оригинальное значение
 
-            if isinstance(self.visit_time, str):
-                self.visit_time = datetime.strptime(self.visit_time, "%H:%M").time()
-                # Проверка, что `duration_minutes` не выходит за границы
+        if isinstance(self.visit_end_time, str) and self.visit_end_time:
+            try:
+                if len(self.visit_end_time) == 5:
+                    self.visit_end_time = datetime.strptime(self.visit_end_time, "%H:%M").time()
+                else:
+                    self.visit_end_time = datetime.strptime(self.visit_end_time, "%H:%M:%S").time()
+            except ValueError:
+                pass
 
-            if self.duration_minutes and self.duration_minutes > 1440:  # 1440 минут = 24 часа
-                self.duration_minutes = 1440  # Ограничиваем максимальное значение до суток
-                # 🛠 **Исправление: если `duration_minutes` отрицательный, делаем его 0**
-            if self.duration_minutes < 0:
-                self.duration_minutes = 0
-                    
-    
+        # 🕐 Автоматический расчет `visit_end_time`, если не задано
+        if not self.visit_end_time and self.visit_time and self.duration_minutes:
             visit_start = datetime.combine(self.visit_date, self.visit_time)
-            self.visit_end_time = (visit_start + timedelta(minutes=self.duration_minutes)).time()
-        super().save(*args, **kwargs)
+            visit_end = visit_start + timedelta(minutes=self.duration_minutes)
+            self.visit_end_time = visit_end.time()  # Записываем новое значение
+
+        # ❌ Ограничиваем длительность, если она выходит за пределы суток
+        if self.duration_minutes > 1440:  # 1440 минут = 24 часа
+            self.duration_minutes = 1440
+        if self.duration_minutes < 0:
+            self.duration_minutes = 0
+
+        super().save(*args, **kwargs)  # ✅ Сохраняем в БД
 
     def __str__(self):
         return f"{self.patient} - {self.doctor} ({self.visit_date} {self.visit_time}) ({self.duration_minutes} мин)"

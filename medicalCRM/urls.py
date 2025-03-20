@@ -30,7 +30,9 @@ urlpatterns = [
     path('create-visit/', views.create_visit, name="create_visit"),
     path("api/branches/", BranchListView.as_view(), name="branch_list"),
     path("api/rooms/", RoomListView.as_view(), name="room_list"),
-    path('api/visits/<int:pk>/', UpdateVisitView.as_view(), name='update_visit'),  # ✅ Должно быть здесь!
+    path("api/visits/<int:pk>/", UpdateVisitView.as_view(), name="update_visit_api"),  # ✅ Должно быть здесь!
+    
+    
 
     
 ]

@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.generics import ListAPIView
-
+from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -25,7 +25,30 @@ from .models import Pacient, Doctor, Nurse, ServicePriceList, VisitRecord
 from django.contrib import messages
 
 
-class UpdateVisitView(UpdateAPIView):
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+
+from rest_framework.generics import UpdateAPIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+import json
+
+from .models import VisitRecord
+from .serializers import VisitSerializer
+from rest_framework.generics import RetrieveUpdateAPIView
+
+
+
+class VisitViewSet(viewsets.ModelViewSet):
+    queryset = VisitRecord.objects.all()
+    serializer_class = VisitRecordSerializer  # ✅ Используем кастомный сериализатор
+
+
+class UpdateVisitView(RetrieveUpdateAPIView):
     """✅ API для обновления времени начала, окончания и длительности визита"""
     queryset = VisitRecord.objects.all()
     serializer_class = VisitSerializer
@@ -34,14 +57,57 @@ class UpdateVisitView(UpdateAPIView):
         visit = get_object_or_404(VisitRecord, pk=kwargs["pk"])  # ✅ Теперь 404 если нет записи
         data = request.data
 
+        visit.patient_id = data.get("patient") or visit.patient_id
+        visit.doctor_id = data.get("doctor") or visit.doctor_id
+        visit.visit_date = data.get("visit_date") or visit.visit_date
+        visit.visit_time = data.get("visit_time") or visit.visit_time
+        visit.visit_end_time = data.get("visit_end_time") or visit.visit_end_time
+        visit.duration_minutes = data.get("duration_minutes") or visit.duration_minutes
+        visit.description = data.get("description") or visit.description
+        visit.payment_status = data.get("payment_status") or visit.payment_status
+
+        # ✅ Фикс обновления филиала и кабинета
+        if "clinic_branch" in data:
+            visit.clinic_branch = ClinicBranch.objects.get(pk=data["clinic_branch"])
+        if "clinic_room" in data:
+            visit.clinic_room = ClinicRoom.objects.get(pk=data["clinic_room"])
+
+        visit.save()
+        print("✅ Данные после сохранения:", visit.clinic_branch_id, visit.clinic_room_id)  # 👉 Посмотри, что реально сохраняется
+        return Response({"message": "✅ Запись обновлена!"}, status=status.HTTP_200_OK)
+
+
+def update_visit(request, visit_id):
+    """✅ Исправленный API для обновления визита"""
+    if request.method != "PATCH":
+        return JsonResponse({"error": "Метод не поддерживается"}, status=405)
+
+    try:
+        visit = VisitRecord.objects.get(id=visit_id)
+        data = json.loads(request.body)
+
+        visit.patient_id = data.get("patient", visit.patient_id)
+        visit.doctor_id = data.get("doctor", visit.doctor_id)
         visit.visit_date = data.get("visit_date", visit.visit_date)
         visit.visit_time = data.get("visit_time", visit.visit_time)
         visit.visit_end_time = data.get("visit_end_time", visit.visit_end_time)
-        visit.duration_minutes = data.get("duration_minutes", visit.duration_minutes)
+        visit.description = data.get("description", visit.description)
+        visit.payment_status = data.get("payment_status", visit.payment_status)
+
+        # 🔥 Обновляем Many-to-Many поле "услуги"
+        services = data.get("services", None)
+        if services is not None:  # Проверяем, передано ли поле
+            visit.services.set(services)
 
         visit.save()
-        return Response({"message": "✅ Запись обновлена!"}, status=status.HTTP_200_OK)
-    
+        return JsonResponse({"message": "✅ Визит обновлен"}, status=200)
+
+    except VisitRecord.DoesNotExist:
+        return JsonResponse({"error": "❌ Визит не найден"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
 class DeleteVisitRecordView(APIView):
     """❌ Удаление записи о визите"""
     def delete(self, request, record_id):
@@ -84,16 +150,21 @@ class VisitListCreateView(generics.ListCreateAPIView):
     serializer_class = VisitSerializer
 
     def perform_create(self, serializer):
-        visit = serializer.save()
-        # Пересчитываем время окончания приёма
-        visit.save()
+        visit = serializer.save()  # ✅ Сначала создаем объект визита в БД
+
+        # 🔥 Теперь добавляем услуги (Many-to-Many поле)
+        services = self.request.data.get("services", [])  # Получаем услуги из запроса
+        if services:
+            visit.services.set(services)  # ✅ Добавляем услуги в визит
+
+        visit.save()  # ✅ Финальное сохранение
 
 class NurseListView(generics.ListAPIView):
     queryset = Nurse.objects.all()
     serializer_class = NurseSerializer
 
 class ServiceListView(generics.ListAPIView):
-    queryset = ServicePriceList.objects.all()
+    queryset = ServicePriceList.objects.all().order_by("subgroup_number", "service_code")
     serializer_class = ServiceSerializer
 
 class DoctorListView(generics.ListAPIView):
@@ -105,13 +176,16 @@ class PatientListView(generics.ListAPIView):
     serializer_class = PatientSerializer
 
 class ClinicRoomViewSet(viewsets.ModelViewSet):
+    queryset = ClinicRoom.objects.all()
+    serializer_class = ClinicRoomSerializer
 
     def get_queryset(self):
-        branch_id = self.request.query_params.get('branch', None)
-        queryset = ClinicRoom.objects.all()
-        if branch_id:
-            queryset = queryset.filter(branch_id=branch_id)
-        return queryset
+        branch_id = self.request.query_params.get("branch")
+
+        if not branch_id or not branch_id.isdigit():
+            raise ValidationError("❌ Некорректный branch_id: ожидается число!")
+
+        return ClinicRoom.objects.filter(branch_id=branch_id)
 
 class BranchListView(ListAPIView):
     queryset = ClinicBranch.objects.all()
@@ -127,7 +201,7 @@ class RoomListView(ListAPIView):
 
     def get_queryset(self):
         branch_id = self.request.query_params.get("branch")
-        if branch_id:
+        if branch_id and branch_id.isdigit():  # ✅ Проверка, что это число
             return ClinicRoom.objects.filter(branch_id=branch_id)  # Исправленный фильтр
         return ClinicRoom.objects.all()
 
@@ -147,7 +221,7 @@ def get_nurses(request):
     return JsonResponse(nurses, safe=False)
 
 def get_services(request):
-    services = list(ServicePriceList.objects.values('id', 'service_name', 'service_price'))
+    services = list(ServicePriceList.objects.values("id", "subgroup_number", "subgroup_name", "service_code", "service_name", "service_price"))
     return JsonResponse(services, safe=False)
 
 
@@ -158,7 +232,7 @@ def index(request):
     patients = Pacient.objects.all()
     doctors = Doctor.objects.all()
     nurses = Nurse.objects.all()
-    services = ServicePriceList.objects.all()
+    services = ServicePriceList.objects.all().order_by("subgroup_number", "service_code")  # 🔹 Сортировка по подгруппам
 
     return render(request, "medicalCRM/index.html", {
         "patients": patients,

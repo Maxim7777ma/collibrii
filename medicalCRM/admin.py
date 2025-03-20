@@ -27,7 +27,7 @@ class ClinicRoomAdmin(admin.ModelAdmin):
 # 📌 Админка для услуг
 @admin.register(ServicePriceList)
 class ServicePriceListAdmin(admin.ModelAdmin):
-    list_display = ("service_code", "service_name", "service_price")
+    list_display = ("subgroup_number", "subgroup_name", "service_code", "service_name", "service_price")
     search_fields = ("service_code", "service_name")
     ordering = ("service_code",)
 
