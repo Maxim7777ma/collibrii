@@ -91,6 +91,23 @@
     text-align: left;
 }
 
+.toastui-calendar-detail-container {
+    background-color: #fff;
+    border: 1px solid #d5d5d5;
+    border-radius: 2px;
+    box-shadow: 0 2px 6px 0 rgba(0, 0, 0, .1);
+    min-width: 301px;
+    padding: 17px 17px 0;
+    width: 100%;
+    height: 100%;
+    text-align: left;
+    overflow-y: auto !important;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    flex-direction: column;
+}
+
 .toastui-calendar-detail-container .toastui-calendar-section-button {
     border-top: 1px solid #e5e5e5;
     font-size: 0;
@@ -117,4 +134,58 @@
 .toastui-calendar-delete-button:active, 
 .toastui-calendar-edit-button:active {
     background: red !important;
+}
+
+
+
+.service-selection-container {
+    display: flex;
+    gap: 15px;
+    max-height: 300px; /* Ограничиваем высоту */
+    overflow-y: auto; /* Включаем прокрутку */
+    border: 1px solid #ccc;
+    padding: 10px;
+    background: #f9f9f9;
+}
+
+.service-list, .selected-service-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 250px; /* Делаем прокрутку для каждого списка */
+    border: 1px solid #ddd;
+    padding: 10px;
+    background: white;
+}
+
+.service-list h3, .selected-service-list h3 {
+    margin: 0 0 5px;
+    font-size: 14px;
+}
+
+#editAvailableServices, #editSelectedServices {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px; /* Фиксируем высоту */
+    overflow-y: auto; /* Добавляем скролл */
+}
+
+#editAvailableServices li, #editSelectedServices li {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+#editAvailableServices li:hover, #editSelectedServices li:hover {
+    background-color: #e0e0e0;
+}
+
+.modal {
+
+    max-height: 80vh !important; /* Ограничиваем максимальную высоту */
+    overflow-y: auto !important; /* Включаем вертикальный скролл, если контент не помещается */
+}
+
+#availableServices, #selectedServices {
+    display: block !important;
 }

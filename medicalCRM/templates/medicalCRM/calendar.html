@@ -80,10 +80,25 @@
         <label>Окончание визита:
             <input type="time" id="visitEndTime" disabled>
         </label>
+
+        <div>
+            <label>Поиск услуги:</label>
+            <input type="text" id="serviceSearch" placeholder="🔎 Введите название, код..." oninput="filterServices()">
+        </div>
         
-        <label>Услуги:
-            <select id="servicesSelect" multiple></select>
-        </label>
+        <div class="service-selection-container">
+            <div class="service-list">
+                <h3>Доступные услуги</h3>
+                <ul id="availableServices"></ul>
+            </div>
+        
+            <div class="selected-service-list">
+                <h3>Выбранные услуги</h3>
+                <ul id="selectedServices"></ul>
+            </div>
+        </div>
+        <input type="hidden" id="selectedServiceIds" name="selected_services">
+        
         <label>Филиал:
             <select id="branchSelect" onchange="updateRooms('branchSelect', 'roomSelect')"></select>
         </label>
@@ -137,9 +152,26 @@
     <label>Окончание визита:
         <input type="time" id="editVisitEndTime">
     </label>
-    <label>Услуги:
-        <select id="editServicesSelect" multiple></select>
-    </label>
+
+    <div>
+        <label>Поиск услуги:</label>
+        <input type="text" id="editServiceSearch" placeholder="🔎 Введите название, код..." oninput="filterEditServices()">
+    </div>
+    
+    <div class="service-selection-container">
+        <div class="service-list">
+            <h3>Доступные услуги</h3>
+            <ul id="editAvailableServices"></ul>
+        </div>
+    
+        <div class="selected-service-list">
+            <h3>Выбранные услуги</h3>
+            <ul id="editSelectedServices"></ul>
+        </div>
+    </div>
+    <input type="hidden" id="editSelectedServiceIds" name="edit_selected_services">
+
+
     <label>Описание:
         <textarea id="editDescription" rows="3"></textarea>
     </label>
@@ -211,6 +243,254 @@
             if (timeString.length === 5) return timeString + ":00"; // Добавляем секунды, если их нет
             return timeString; // Уже в формате HH:MM:SS
         }
+
+
+
+
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            setupServiceSelection("availableServices", "selectedServices", "selectedServiceIds");
+            setupServiceSelection("editAvailableServices", "editSelectedServices", "editSelectedServiceIds");
+        });
+
+        function updateSelectedServices() {
+            let selectedList = document.getElementById("selectedServices");
+            let selectedIds = [];
+        
+            selectedList.querySelectorAll("li").forEach(li => {
+                selectedIds.push(li.dataset.id);
+            });
+        
+            document.getElementById("selectedServiceIds").value = selectedIds.join(",");
+            console.log("📌 Выбранные ID услуг:", selectedIds);
+        }
+        
+        // 🔹 Функция перемещения услуги между списками
+        function setupServiceSelection(availableId, selectedId, hiddenInputId) {
+            const availableList = document.getElementById(availableId);
+            const selectedList = document.getElementById(selectedId);
+            const selectedServiceIdsInput = document.getElementById(hiddenInputId);
+        
+
+        
+            function moveService(event, fromList, toList) {
+                if (event.target.tagName === "LI") {
+                    let item = event.target;
+            
+                    if (fromList.contains(item)) {
+                        fromList.removeChild(item);
+                        toList.appendChild(item);
+            
+                        // ✅ Вызов нужной функции в зависимости от инпута
+                        if (hiddenInputId === "selectedServiceIds") {
+                            updateSelectedServices();
+                        } else if (hiddenInputId === "editSelectedServiceIds") {
+                            updateEditSelectedServices();
+                        }
+                    } else {
+                        console.warn("⚠️ Элемент уже удален или не найден в списке", item);
+                    }
+                }
+            }
+        
+            availableList.addEventListener("click", function (event) {
+                moveService(event, availableList, selectedList);
+            });
+        
+            selectedList.addEventListener("click", function (event) {
+                moveService(event, selectedList, availableList);
+            });
+        }
+        
+        // 🔹 Функция загрузки доступных услуг в окно создания
+        function loadServices() {
+            console.log("🔥 Загружаем список услуг...");
+        
+            fetch("/api/services/")
+                .then(response => response.json())
+                .then(data => {
+                    console.log("📥 Полученные услуги:", data);
+        
+                    let availableList = document.getElementById("availableServices");
+                    availableList.innerHTML = ""; // Очищаем список
+        
+                    data.forEach(service => {
+                        let li = document.createElement("li");
+                        li.textContent = `[${service.subgroup_number}] ${service.subgroup_name} → ${service.service_code} - ${service.service_name} (${service.service_price} грн)`;
+                        li.dataset.id = service.id;
+                        li.onclick = function () {
+                            selectService(this);
+                        };
+                        availableList.appendChild(li);
+                    });
+        
+                    console.log("✅ Услуги загружены!");
+                })
+                .catch(error => console.error("❌ Ошибка загрузки услуг:", error));
+        }
+        
+        // 🔹 Функция загрузки доступных и выбранных услуг в окно редактирования
+        function loadEditServices(visitId) {
+            console.log(`🔥 Загружаем услуги для редактирования визита ID: ${visitId}`);
+        
+            fetch("/api/services/")
+                .then(response => response.json())
+                .then(allServices => {
+                    console.log("📥 Все услуги:", allServices);
+        
+                    fetch(`/api/visits/${visitId}/`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`Ошибка загрузки визита: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(visitData => {
+                            console.log("📌 Данные визита:", visitData);
+                            updateEditSelectedServices(); // Обновляем список ID
+                            
+                            let availableList = document.getElementById("editAvailableServices");
+                            let selectedList = document.getElementById("editSelectedServices");
+                            availableList.innerHTML = "";
+                            selectedList.innerHTML = "";
+        
+                            if (!visitData.services || !Array.isArray(visitData.services)) {
+                                console.error("❌ Ошибка: services не массив!", visitData.services);
+                                return;
+                            }
+        
+                            let selectedServiceIds = visitData.services.map(s => s.id); // Получаем ID выбранных услуг
+                            let selectedServiceStrings = visitData.services || [];
+
+                            allServices.forEach(service => {
+                                let displayText = `[${service.subgroup_number}] ${service.subgroup_name} → ${service.service_code} - ${service.service_name} (${service.service_price} грн)`;
+                                
+                                let li = document.createElement("li");
+                                li.textContent = displayText;
+                                li.dataset.id = service.id;
+                                li.onclick = function () {
+                                    selectEditService(this);
+                                };
+                            
+                                if (selectedServiceIds.includes(service.id)) {
+                                    selectedList.appendChild(li);
+                                } else {
+                                    availableList.appendChild(li);
+                                }
+                            });
+                            
+        
+                            
+                            console.log("✅ Услуги загружены в модальное окно редактирования!");
+                        })
+                        .catch(error => console.error("❌ Ошибка загрузки данных визита:", error));
+                })
+                .catch(error => console.error("❌ Ошибка загрузки всех услуг:", error));
+
+                
+        }
+        
+        
+        
+        // 🔹 Функция фильтрации услуг в окне создания
+        function filterServices() {
+            let searchText = document.getElementById("serviceSearch").value.toLowerCase();
+            let availableList = document.getElementById("availableServices");
+        
+            if (!availableList) {
+                console.error("❌ Ошибка: список доступных услуг не найден!");
+                return;
+            }
+        
+            let services = availableList.getElementsByTagName("li");
+        
+            Array.from(services).forEach(item => {
+                let text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchText) ? "" : "none";
+            });
+        
+            console.log(`🔎 Поиск услуг: ${searchText}`);
+        }
+        
+        // 🔹 Функция фильтрации услуг в окне редактирования
+        function filterEditServices() {
+            let searchText = document.getElementById("editServiceSearch").value.toLowerCase();
+            let availableList = document.getElementById("editAvailableServices");
+        
+            if (!availableList) {
+                console.error("❌ Ошибка: список доступных услуг не найден!");
+                return;
+            }
+        
+            let services = availableList.getElementsByTagName("li");
+        
+            Array.from(services).forEach(item => {
+                let text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchText) ? "" : "none";
+            });
+        
+            console.log(`🔎 Поиск услуг (редактирование): ${searchText}`);
+        }
+
+
+        function selectService(element) {
+            let selectedList = document.getElementById("selectedServices");
+            let availableList = document.getElementById("availableServices");
+        
+            if (element.parentNode === availableList) {
+                // 🔹 Перемещаем в "Выбранные"
+                selectedList.appendChild(element);
+            } else {
+                // 🔹 Перемещаем обратно в "Доступные"
+                availableList.appendChild(element);
+            }
+        
+            updateSelectedServices(); // Обновляем список ID
+        }
+
+        function selectEditService(element) {
+            let selectedList = document.getElementById("editSelectedServices");
+            let availableList = document.getElementById("editAvailableServices");
+        
+            if (element.parentNode === availableList) {
+                // 🔹 Перемещаем в "Выбранные", но проверяем, что элемент действительно есть в списке
+                if (availableList.contains(element)) {
+                    availableList.removeChild(element);
+                    selectedList.appendChild(element);
+                    updateEditSelectedServices(); // Обновляем список ID
+                } else {
+                    console.warn("⚠️ Элемент уже удален или не найден в доступных услугах", element);
+                }
+            } else {
+                // 🔹 Перемещаем обратно в "Доступные"
+                if (selectedList.contains(element)) {
+                    selectedList.removeChild(element);
+                    availableList.appendChild(element);
+                    updateEditSelectedServices(); // Обновляем список ID
+                } else {
+                    console.warn("⚠️ Элемент уже удален или не найден в выбранных услугах", element);
+                }
+            }
+        }
+
+        function updateEditSelectedServices() {
+            let selectedList = document.getElementById("editSelectedServices");
+            let selectedIds = [];
+        
+            selectedList.querySelectorAll("li").forEach(li => {
+                selectedIds.push(li.dataset.id);
+            });
+        
+            document.getElementById("editSelectedServiceIds").value = selectedIds.join(",");
+            console.log("📌 Выбранные ID услуг (редактирование):", selectedIds);
+        }
+        
+
+
+
+
+
 
         document.addEventListener("DOMContentLoaded", function () {
             console.log("📢 Инициализация календаря...");
@@ -343,7 +623,7 @@
                     popupDetailDate(schedule) {
                         console.log("🟢 Данные в popup:", schedule.raw); // ✅ Проверяем `raw`
                         // Формируем список услуг
-                        let serviceList = "Не указаны";
+                        
                         
                         // 🏥 Филиал
                         let branch = schedule.raw.branch && schedule.raw.branch !== "Не указан" 
@@ -361,15 +641,22 @@
                         console.log("🏥 Филиал:", branch);
                         console.log("🚪 Кабинет:", room);
 
+ 
+
+
+                        // 📌 Формируем список услуг
+                        // 📌 Формируем список услуг
+                        let serviceList = "Не указаны";
                         if (Array.isArray(schedule.raw.services)) {
-                            // ✅ Если `services` - массив, преобразуем его в список
-                            serviceList = `<ul style="padding-left: 20px;">` + 
-                                schedule.raw.services.map(s => `<li>${s}</li>`).join("") + 
+                            serviceList = `<ul style="padding-left: 20px;">` +
+                                schedule.raw.services.map(s =>
+                                    `<li>[${s.subgroup_number}] ${s.subgroup_name} → ${s.service_code} - ${s.service_name} (${s.service_price} грн)</li>`
+                                ).join("") +
                                 `</ul>`;
                         } else if (typeof schedule.raw.services === "string") {
-                            // ✅ Если `services` - строка, выводим её напрямую
                             serviceList = schedule.raw.services;
                         }
+
                         return `
                             <ul style="list-style: none; padding: 0;">
                                 <li><strong>Дата визита:</strong> ${formatDate(schedule.start)}</li>
@@ -377,7 +664,8 @@
                                 <li><strong>Пациент:</strong> ${schedule.raw.patient_name || "Не указан"}</li>
                                 <li><strong>Врач:</strong> ${schedule.raw.doctor_name || "Не указан"}</li>
                                 <li><strong>Медсестра:</strong> ${schedule.raw.nurse_name || "Не указана"}</li>
-                                <li><strong>Услуги:</strong> ${Array.isArray(schedule.raw.services) ? schedule.raw.services.join(", ") : "Не указаны"}</li>
+ 
+                                <li><strong>Услуги:</strong> ${serviceList}</li>
                                 <li><strong>Филиал:</strong> ${branch}</li>
                                 <li><strong>Кабинет:</strong> ${room}</li>
                                 <li><strong>Описание:</strong> ${schedule.raw.description || "Нет описания"}</li>
@@ -599,8 +887,9 @@
                 loadSelectOptions("/api/doctors/", "doctorSelect", formatUserOption);
                 loadSelectOptions("/api/patients/", "patientSelect", formatUserOption);
                 loadSelectOptions("/api/nurses/", "nurseSelect", formatUserOption);
-                loadSelectOptions("/api/services/", "servicesSelect", formatServiceOption);
+                
                 loadBranches();
+                loadServices();  // 🔥 Загружаем услуги!
             }
 
             document.getElementById("durationSelect").addEventListener("change", function() {
@@ -706,8 +995,11 @@
                 let visitTimeInput = document.getElementById("visitTime");
                 let visitEndTimeInput = document.getElementById("visitEndTime");
                 let selectedDuration = document.getElementById("durationSelect").value;
-                let selectedServices = Array.from(document.getElementById("servicesSelect").selectedOptions)
-                    .map(o => parseInt(o.value));  // Преобразуем в число
+                let selectedServiceIdsStr = document.getElementById("selectedServiceIds").value || "";
+                let selectedServices = selectedServiceIdsStr
+                    .split(",")
+                    .filter(id => id)
+                    .map(id => parseInt(id));
 
 
                 let requiredFields = [
@@ -895,7 +1187,23 @@
                             <p><strong>Время:</strong> ${data.visit_time} - ${data.visit_end_time}</p>
                             <p><strong>Продолжительность:</strong> ${data.duration_minutes} мин</p>
                             <p><strong>Статус:</strong> ${getVisitStatusLabel(data.payment_status)}</p>
+                            <ul id="visitServices"></ul>
                         `;
+
+                        document.getElementById("visitDetails").innerHTML = visitDetails;
+
+                        let serviceList = document.getElementById("visitServices");
+                        serviceList.innerHTML = "";  // Очищаем перед вставкой
+
+                        if (data.services && Array.isArray(data.services)) {
+                            data.services.forEach(service => {
+                                let li = document.createElement("li");
+                                li.textContent = `[${service.subgroup_number}] ${service.subgroup_name} → ${service.service_code} - ${service.service_name} (${service.service_price} грн)`;
+                                serviceList.appendChild(li);
+                            });
+                        } else {
+                            serviceList.innerHTML = "<li>Нет услуг</li>";
+                        }
             
                         document.getElementById("visitDetails").innerHTML = visitDetails;
             
@@ -986,7 +1294,9 @@
             
             function openEditModal(visitId) {
                 console.log(`📢 Открытие модального окна для визита ID: ${visitId}`);
-            
+                loadEditServices(visitId);
+                
+
                 fetch(`/api/visits/${visitId}/`)
                     .then(response => {
                         if (!response.ok) {
@@ -1004,7 +1314,7 @@
                         let roomSelect = document.getElementById("editRoomSelect");
                         let servicesSelect = document.getElementById("editServicesSelect");
             
-                        if (!patientSelect || !doctorSelect || !nurseSelect || !branchSelect || !roomSelect || !servicesSelect) {
+                        if (!patientSelect || !doctorSelect || !nurseSelect || !branchSelect || !roomSelect ) {
                             console.error("❌ Ошибка: один из элементов формы не найден!");
                             return;
                         }
@@ -1020,7 +1330,26 @@
                         document.getElementById("editStatusSelect").value = data.payment_status || "";
                         document.getElementById("editTotalPrice").value = data.total_price || 0;
                         document.getElementById("editIsOnline").checked = data.is_online || false;
-            
+                        
+
+                                    // ✅ 📌 **Обновляем список выбранных услуг**
+                        let selectedList = document.getElementById("editSelectedServices");
+                        selectedList.innerHTML = "";  // Очищаем список перед обновлением
+
+                        if (data.services && Array.isArray(data.services)) {
+                            data.services.forEach(service => {
+                                let li = document.createElement("li");
+                                li.textContent = `[${service.subgroup_number}] ${service.subgroup_name} → ${service.service_code} - ${service.service_name} (${service.service_price} грн)`;
+                                li.dataset.id = service.id;
+                                li.onclick = function () {
+                                    selectEditService(this);
+                                };
+                                selectedList.appendChild(li); // Добавляем в список
+                            });
+                        } else {
+                            console.warn("⚠️ Нет услуг для этого визита!");
+                        }
+
                         // ✅ Получаем список ID выбранных услуг (преобразуем в числа)
                         let selectedServiceIds = (data.services || []).map(s => parseInt(s.id));
                         // ✅ Сохраняем ID филиала и кабинета перед обновлением
@@ -1058,23 +1387,9 @@
                             updateRooms("editBranchSelect", "editRoomSelect", data.clinic_room);
             
                             // ✅ Очищаем список услуг перед вставкой новых значений
-                            servicesSelect.innerHTML = "";
+                        
             
-                            // ✅ Заполняем услуги и выделяем выбранные
-                            services.forEach(service => {
-                                let option = document.createElement("option");
-                                option.value = service.id;
-                                option.textContent = `[${service.subgroup_number}] ${service.subgroup_name} → ${service.service_code} - ${service.service_name} (${service.service_price} грн)`;
-                                
-                                // 📌 Принудительно отмечаем услугу как выбранную
-                                if (selectedServiceIds.includes(parseInt(service.id))) {
-                                    option.selected = true;
-                                }
-            
-                                servicesSelect.appendChild(option);
-                            });
-            
-                            console.log("✅ Обновленный список услуг:", servicesSelect);
+
                         })
                         .catch(error => console.error("❌ Ошибка загрузки филиалов, кабинетов или услуг:", error));
             
@@ -1199,8 +1514,11 @@
                 }
             
                 // 📌 Получаем только ID выбранных услуг
-                let selectedServices = Array.from(document.getElementById("editServicesSelect").selectedOptions)
-                    .map(option => parseInt(option.value)); // Преобразуем в числа
+                let selectedServiceIdsStr = document.getElementById("editSelectedServiceIds").value || "";
+                let selectedServices = selectedServiceIdsStr
+                    .split(",")
+                    .filter(id => id)
+                    .map(id => parseInt(id));
             
                 let updatedData = {
                     patient: document.getElementById("editPatientSelect").value,
@@ -1245,34 +1563,7 @@
                     loadVisits(); // 🔥 Загружаем заново визиты
             
                     // 🔥 Обновляем селектор услуг в UI
-                    let servicesSelect = document.getElementById("editServicesSelect");
-                    servicesSelect.innerHTML = "";
-            
-                    fetch("/api/services/")
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`Ошибка загрузки услуг: ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then(services => {
-                            if (!services || !Array.isArray(services)) {
-                                throw new Error("❌ Неверный формат данных: ожидается массив услуг!");
-                            }
-
-                            let servicesSelect = document.getElementById("editServicesSelect");
-                            servicesSelect.innerHTML = ""; // Очищаем перед обновлением
-
-                            services.forEach(service => {
-                                let option = document.createElement("option");
-                                option.value = service.id;
-                                option.textContent = `[${service.subgroup_number}] ${service.subgroup_name} → ${service.service_code} - ${service.service_name} (${service.service_price} грн)`;
-                                servicesSelect.appendChild(option);
-                            });
-
-                            console.log("✅ Услуги загружены:", services);
-                        })
-                        .catch(error => console.error("❌ Ошибка загрузки услуг:", error));
+                
                 })
                 .catch(error => console.error("❌ Ошибка при обновлении визита!", error));
             }

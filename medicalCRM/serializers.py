@@ -64,7 +64,8 @@ class VisitSerializer(serializers.ModelSerializer):
     nurse_name = serializers.CharField(source='nurse.fool_name', read_only=True)
 
     # ✅ Читаем услуги как список строк
-    services = serializers.SerializerMethodField()
+    
+    services = ServiceSerializer(many=True, read_only=True)
 
     # ✅ Передаём ID при обновлении через `PrimaryKeyRelatedField`
     clinic_branch = serializers.PrimaryKeyRelatedField(
@@ -73,7 +74,7 @@ class VisitSerializer(serializers.ModelSerializer):
     clinic_room = serializers.PrimaryKeyRelatedField(
         queryset=ClinicRoom.objects.all(), write_only=True
     )
-    
+
     services_ids = serializers.PrimaryKeyRelatedField(
         queryset=ServicePriceList.objects.all(), many=True, source="services", write_only=True
     )
@@ -82,9 +83,7 @@ class VisitSerializer(serializers.ModelSerializer):
         model = VisitRecord
         fields = '__all__'
 
-    def get_services(self, obj):
-        """Отображаем услуги в читаемом виде"""
-        return [f"[{s.subgroup_number}] {s.subgroup_name} → {s.service_code} - {s.service_name} ({s.service_price} грн)" for s in obj.services.all()]
+
 
 
 class UpdateVisitView(RetrieveUpdateAPIView):  # ✅ Теперь поддерживает и GET, и PATCH

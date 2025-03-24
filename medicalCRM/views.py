@@ -95,8 +95,8 @@ def update_visit(request, visit_id):
         visit.payment_status = data.get("payment_status", visit.payment_status)
 
         # 🔥 Обновляем Many-to-Many поле "услуги"
-        services = data.get("services", None)
-        if services is not None:  # Проверяем, передано ли поле
+        services = data.get("services_ids") or data.get("services")
+        if services is not None:
             visit.services.set(services)
 
         visit.save()
@@ -153,7 +153,8 @@ class VisitListCreateView(generics.ListCreateAPIView):
         visit = serializer.save()  # ✅ Сначала создаем объект визита в БД
 
         # 🔥 Теперь добавляем услуги (Many-to-Many поле)
-        services = self.request.data.get("services", [])  # Получаем услуги из запроса
+        services = self.request.data.get("services_ids") or self.request.data.get("services", [])
+        # Получаем услуги из запроса
         if services:
             visit.services.set(services)  # ✅ Добавляем услуги в визит
 
