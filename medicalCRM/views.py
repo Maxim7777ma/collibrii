@@ -65,6 +65,12 @@ class UpdateVisitView(RetrieveUpdateAPIView):
         visit.duration_minutes = data.get("duration_minutes") or visit.duration_minutes
         visit.description = data.get("description") or visit.description
         visit.payment_status = data.get("payment_status") or visit.payment_status
+        visit.discount_percent = data.get("discount_percent", visit.discount_percent)
+
+        # Обновляем список услуг со скидкой
+        discounted = data.get("discounted_services")
+        if discounted is not None:
+            visit.discounted_services.set(discounted)
 
         # ✅ Фикс обновления филиала и кабинета
         if "clinic_branch" in data:
@@ -120,6 +126,11 @@ class VisitRecordViewSet(viewsets.ModelViewSet):
     queryset = VisitRecord.objects.all()
     serializer_class = VisitRecordSerializer
 
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return VisitRecordSerializer
+        return VisitSerializer
+
     def create(self, request, *args, **kwargs):
         """Создание новой записи"""
         serializer = self.get_serializer(data=request.data)
@@ -145,20 +156,17 @@ class VisitRecordViewSet(viewsets.ModelViewSet):
 
 
 
+
 class VisitListCreateView(generics.ListCreateAPIView):
     queryset = VisitRecord.objects.all()
-    serializer_class = VisitSerializer
 
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return VisitRecordSerializer  # для создания
+        return VisitSerializer  # для отображения
+    
     def perform_create(self, serializer):
-        visit = serializer.save()  # ✅ Сначала создаем объект визита в БД
-
-        # 🔥 Теперь добавляем услуги (Many-to-Many поле)
-        services = self.request.data.get("services_ids") or self.request.data.get("services", [])
-        # Получаем услуги из запроса
-        if services:
-            visit.services.set(services)  # ✅ Добавляем услуги в визит
-
-        visit.save()  # ✅ Финальное сохранение
+        serializer.save()  # логика уже внутри сериализатора
 
 class NurseListView(generics.ListAPIView):
     queryset = Nurse.objects.all()

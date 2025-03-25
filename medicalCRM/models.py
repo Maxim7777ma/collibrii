@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from datetime import date
 from datetime import datetime,timedelta
 
-
+from decimal import Decimal
 
 from django.db import models
 
@@ -220,6 +220,22 @@ class VisitRecord(models.Model):
         null=True, blank=True
     )  # Кабинет внутри филиала
 
+        # ✅ Новое поле — процент скидки (на все услуги, если не указаны индивидуальные)
+    discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        verbose_name="Скидка (%) на визит"
+    )
+
+    # ✅ Новое поле — список ID услуг, на которые применяется скидка (остальные — по полной цене)
+    discounted_services = models.ManyToManyField(
+        'ServicePriceList',
+        related_name='discounted_visits',
+        verbose_name="Услуги со скидкой",
+        blank=True
+    )
+
     def save(self, *args, **kwargs):
         """✅ Исправленный метод `save()`, который обрабатывает формат времени и рассчитывает `visit_end_time`"""
         if isinstance(self.visit_time, str):
@@ -252,6 +268,8 @@ class VisitRecord(models.Model):
             self.duration_minutes = 1440
         if self.duration_minutes < 0:
             self.duration_minutes = 0
+
+ 
 
         super().save(*args, **kwargs)  # ✅ Сохраняем в БД
 
