@@ -22,7 +22,7 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import render
 from medicalCRM.views import (
     VisitListCreateView, NurseListView, ServiceListView, 
-    DoctorListView, PatientListView,UpdateVisitView,BranchListView, RoomListView
+    DoctorListView, PatientListView,UpdateVisitView,BranchListView, RoomListView,FilteredVisitRecords,SpecializationListView
 )
 
 # Функция рендеринга страницы календаря
@@ -44,6 +44,8 @@ urlpatterns = [
     path("api/rooms/", RoomListView.as_view(), name="room_list"),
     path('api/doctors/', DoctorListView.as_view(), name='doctors'),
     path('api/patients/', PatientListView.as_view(), name='patients'),
+    path('api/filtered-visits/', FilteredVisitRecords.as_view(), name='filtered_visits'),  # Путь для фильтрации визитов
+    path('api/specializations/', SpecializationListView.as_view(), name='specializations'),
     path('calendar/', calendar_view, name='calendar'), 
     path('login', auth_views.LoginView.as_view(template_name='clients/login.html'), name='home'),  # Главная страница = логин
 ]

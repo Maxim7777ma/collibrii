@@ -4,7 +4,7 @@ from django.shortcuts import render
 from .views import (
     VisitListCreateView, NurseListView, ServiceListView, 
     DoctorListView, PatientListView, DeleteVisitRecordView,
-    BranchListView, RoomListView,ClinicRoomViewSet,UpdateVisitView
+    BranchListView, RoomListView,ClinicRoomViewSet,UpdateVisitView,FilteredVisitRecords,SpecializationListView
 )
 
 from . import views
@@ -31,6 +31,8 @@ urlpatterns = [
     path("api/branches/", BranchListView.as_view(), name="branch_list"),
     path("api/rooms/", RoomListView.as_view(), name="room_list"),
     path("api/visits/<int:pk>/", UpdateVisitView.as_view(), name="update_visit_api"),  # ✅ Должно быть здесь!
+    path('api/filtered-visits/', FilteredVisitRecords.as_view(), name='filtered_visits'),  # Путь для фильтрации визитов
+    path('api/specializations/', SpecializationListView.as_view(), name='specializations'),
     
     
 

@@ -25,3 +25,21 @@
 
 
 
+.toastui-calendar-task,
+.toastui-calendar-milestone,
+.toastui-calendar-task-view,
+.toastui-calendar-milestone-view,
+.toastui-calendar-allday,
+.toastui-calendar-daygrid-allday,
+.toastui-calendar-allday-panel,
+.toastui-calendar-panel.toastui-calendar-allday,
+.toastui-calendar-layout.toastui-calendar-month .toastui-calendar-daygrid-allday {
+    display: none !important;
+}
+
+.toastui-calendar-layout .toastui-calendar-panel-resizer {
+    display: none !important;
+}
+.toastui-calendar-panel.toastui-calendar-time {
+    height: 90% !important;
+}

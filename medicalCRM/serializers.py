@@ -1,7 +1,13 @@
 from rest_framework import serializers
-from .models import Nurse, ServicePriceList, VisitRecord, Doctor, Pacient,ClinicRoom,ClinicBranch
+from .models import Nurse, ServicePriceList, VisitRecord, Doctor, Pacient,ClinicRoom,ClinicBranch,Specialization
 from rest_framework.generics import RetrieveUpdateAPIView
 from decimal import Decimal
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+
+
 
 
 
@@ -115,7 +121,7 @@ class ClinicRoomSerializer(serializers.ModelSerializer):
         model = ClinicRoom
         fields = "__all__"  
 
-     
+  
 
 
 class VisitSerializer(serializers.ModelSerializer):
@@ -171,3 +177,39 @@ class UpdateVisitView(RetrieveUpdateAPIView):  # ✅ Теперь поддерж
     """API для получения и обновления визита"""
     queryset = VisitRecord.objects.all()
     serializer_class = VisitSerializer   
+
+
+
+class FilteredVisitRecords(APIView):
+    def post(self, request):
+        filters = request.data
+        queryset = VisitRecord.objects.all()
+
+        # Фильтрация по филиалу
+        if 'clinic_branch' in filters:
+            queryset = queryset.filter(clinic_branch_id=filters['clinic_branch'])
+
+        # Фильтрация по кабинету
+        if 'clinic_room' in filters:
+            queryset = queryset.filter(clinic_room_id=filters['clinic_room'])
+
+        # Фильтрация по специализации врача
+        if 'specialization' in filters:
+            queryset = queryset.filter(doctor__specializations__id=filters['specialization'])
+
+        # Фильтрация по врачу
+        if 'doctor' in filters:
+            queryset = queryset.filter(doctor_id=filters['doctor'])
+
+        # Фильтрация по пациенту
+        if 'patient' in filters:
+            queryset = queryset.filter(patient_id=filters['patient'])
+
+        # Сериализация данных
+        serializer = VisitRecordSerializer(queryset, many=True)
+        return Response(serializer.data)
+    
+class SpecializationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Specialization
+        fields = ['id', 'name']  # Указываем поля, которые хотим сериализовать

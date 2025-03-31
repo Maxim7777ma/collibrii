@@ -13,8 +13,10 @@ from django.http import JsonResponse
 from .models import Doctor, Pacient, Nurse, ServicePriceList
 
 from rest_framework import generics
-from .models import Nurse, ServicePriceList, VisitRecord, Doctor, Pacient,ClinicRoom
-from .serializers import NurseSerializer, ServiceSerializer, VisitSerializer, DoctorSerializer, PatientSerializer
+from .models import Nurse, ServicePriceList, VisitRecord, Doctor, Pacient,ClinicRoom,Specialization
+from .serializers import NurseSerializer, ServiceSerializer, VisitSerializer, DoctorSerializer, PatientSerializer,SpecializationSerializer
+
+
 
 from rest_framework.generics import UpdateAPIView
 from .serializers import ClinicBranchSerializer, ClinicRoomSerializer
@@ -40,8 +42,66 @@ import json
 from .models import VisitRecord
 from .serializers import VisitSerializer
 from rest_framework.generics import RetrieveUpdateAPIView
+from django.db.models import Q
 
 
+def get_filtered_visits(request):
+    filters = request.data  # Получаем фильтры с фронта
+
+    visits = VisitRecord.objects.all()
+
+    # Применяем фильтры
+    if filters.get('branch'):
+        visits = visits.filter(clinic_branch_id=filters['branch'])
+    if filters.get('room'):
+        visits = visits.filter(clinic_room_id=filters['room'])
+    if filters.get('doctor'):
+        visits = visits.filter(doctor_id=filters['doctor'])
+    if filters.get('patient'):
+        visits = visits.filter(patient_id=filters['patient'])
+    
+    # Отправляем отфильтрованные визиты
+    return JsonResponse(list(visits.values()), safe=False)
+
+
+class FilteredVisitRecords(APIView):
+    def post(self, request):
+        try:
+            filters = request.data
+            queryset = VisitRecord.objects.all()
+
+            # Фильтрация по филиалу
+            if 'clinic_branch' in filters:
+                queryset = queryset.filter(clinic_branch_id=filters['clinic_branch'])
+
+            # Фильтрация по кабинету
+            if 'clinic_room' in filters:
+                queryset = queryset.filter(clinic_room_id=filters['clinic_room'])
+
+            # Фильтрация по специализации врача
+            if 'specialization' in filters:
+                queryset = queryset.filter(doctor__specializations__id=filters['specialization'])
+
+            # Фильтрация по врачу
+            if 'doctor' in filters:
+                queryset = queryset.filter(doctor_id=filters['doctor'])
+
+            # Фильтрация по пациенту
+            if 'patient' in filters:
+                queryset = queryset.filter(patient_id=filters['patient'])
+
+            # Сериализация данных
+            serializer = VisitRecordSerializer(queryset, many=True)
+            return Response(serializer.data)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class SpecializationListView(APIView):
+    def get(self, request):
+        specializations = Specialization.objects.all()
+        serializer = SpecializationSerializer(specializations, many=True)
+        return Response(serializer.data)
 
 class VisitViewSet(viewsets.ModelViewSet):
     queryset = VisitRecord.objects.all()

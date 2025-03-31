@@ -191,6 +191,7 @@ class VisitRecord(models.Model):
     visit_date = models.DateField(verbose_name="Дата визита")  # Дата приема
     visit_time = models.TimeField(verbose_name="Время визита")  # Время приема
 
+    visit_end_date = models.DateField(verbose_name="Дата окончания визита", null=True, blank=True)  # Новое поле
     visit_end_time = models.TimeField(verbose_name="Время окончания", null=True, blank=True)
     
     duration_minutes = models.PositiveIntegerField(verbose_name="Продолжительность (в минутах)", default=10)
@@ -256,6 +257,10 @@ class VisitRecord(models.Model):
                     self.visit_end_time = datetime.strptime(self.visit_end_time, "%H:%M:%S").time()
             except ValueError:
                 pass
+            
+        if not self.visit_end_date:
+            self.visit_end_date = self.visit_date  # Если дата окончания не задана, принимаем дату начала визита как дату окончания.
+    
 
         # 🕐 Автоматический расчет `visit_end_time`, если не задано
         if not self.visit_end_time and self.visit_time and self.duration_minutes:
