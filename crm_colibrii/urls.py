@@ -22,8 +22,9 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import render
 from medicalCRM.views import (
     VisitListCreateView, NurseListView, ServiceListView, 
-    DoctorListView, PatientListView,UpdateVisitView,BranchListView, RoomListView,FilteredVisitRecords,SpecializationListView
+    DoctorListView, PatientListView,UpdateVisitView,BranchListView, RoomListView,FilteredVisitRecords,SpecializationListView,DoctorsBySpecializationAPIView
 )
+from medicalCRM import views
 
 # Функция рендеринга страницы календаря
 def calendar_view(request):
@@ -46,6 +47,13 @@ urlpatterns = [
     path('api/patients/', PatientListView.as_view(), name='patients'),
     path('api/filtered-visits/', FilteredVisitRecords.as_view(), name='filtered_visits'),  # Путь для фильтрации визитов
     path('api/specializations/', SpecializationListView.as_view(), name='specializations'),
+    path('api/doctors-by-specialization/<int:specialization_id>/', DoctorsBySpecializationAPIView.as_view(), name='doctors-by-specialization'),
+    path('api/get_filtered_visits/', views.get_filtered_visits, name='get_filtered_visits'),
+    path('api/visit/', views.VisitRecordViewSet.as_view({'get': 'list'}), name='visit_record_list'),
+    path('api/visit/create/', views.create_visit, name='create_visit'),
+    path('api/visit/<int:visit_id>/update/', views.update_visit, name='update_visit'),
+    path('api/visit/<int:visit_id>/delete/', views.DeleteVisitRecordView.as_view(), name='delete_visit'),
+
     path('calendar/', calendar_view, name='calendar'), 
     path('login', auth_views.LoginView.as_view(template_name='clients/login.html'), name='home'),  # Главная страница = логин
 ]

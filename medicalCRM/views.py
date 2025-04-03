@@ -16,7 +16,7 @@ from rest_framework import generics
 from .models import Nurse, ServicePriceList, VisitRecord, Doctor, Pacient,ClinicRoom,Specialization
 from .serializers import NurseSerializer, ServiceSerializer, VisitSerializer, DoctorSerializer, PatientSerializer,SpecializationSerializer
 
-
+from datetime import timedelta,datetime
 
 from rest_framework.generics import UpdateAPIView
 from .serializers import ClinicBranchSerializer, ClinicRoomSerializer
@@ -43,59 +43,159 @@ from .models import VisitRecord
 from .serializers import VisitSerializer
 from rest_framework.generics import RetrieveUpdateAPIView
 from django.db.models import Q
+import logging
+
+
+@api_view(['POST'])
+def get_filtered_visits(request):
+    filters = request.data  # Получаем фильтры с фронта
+    print(f"🚀 Полученные фильтры: {filters}")
+    print("🔥 Вызвана вьюха: get_filtered_visits", flush=True)
+
+    # Начинаем с пустого Q-объекта (для объединения через AND)
+    q_filter = Q()
+
+    # Применяем фильтры через AND
+    if 'clinic_branch' in filters and filters['clinic_branch']:
+        print(f"📌 Фильтруем по филиалу: {filters['clinic_branch']}")
+        q_filter &= Q(clinic_branch_id=filters['clinic_branch'])
+
+    if 'clinic_room' in filters and filters['clinic_room']:
+        print(f"📌 Фильтруем по кабинету: {filters['clinic_room']}")
+        q_filter &= Q(clinic_room_id=filters['clinic_room'])
+
+    if 'doctor' in filters and filters['doctor']:
+        print(f"📌 Фильтруем по врачу: {filters['doctor']}")
+        q_filter &= Q(doctor_id=filters['doctor'])
+
+    if 'patient' in filters and filters['patient']:
+        print(f"📌 Фильтруем по пациенту: {filters['patient']}")
+        q_filter &= Q(patient_id=filters['patient'])
+
+    # Фильтрация по дате начала
+    if 'start_date' in filters and filters['start_date']:
+        print(f"📌 Фильтруем по дате начала: {filters['start_date']}")
+        q_filter &= Q(visit_date__gte=filters['start_date'])
+
+    # Фильтрация по дате окончания
+    if 'end_date' in filters and filters['end_date']:
+        print(f"📌 Фильтруем по дате окончания: {filters['end_date']}")
+        q_filter &= Q(visit_date__lte=filters['end_date'])
+
+    # Применяем все фильтры сразу через объединенный Q-объект
+    visits = VisitRecord.objects.filter(q_filter)
+
+    print(f"📥 Найдено визитов: {visits.count()} шт.")
+    visits_data = visits.values('id', 'patient__fool_name', 'doctor__fool_name', 'visit_date', 'visit_time', 'total_price')
+    print(f"📤 Отправляем на фронт: {list(visits_data)}")
+    return JsonResponse(list(visits_data), safe=False)
 
 
 def get_filtered_visits(request):
-    filters = request.data  # Получаем фильтры с фронта
+    filters = request.data
+    queryset = VisitRecord.objects.all()
 
-    visits = VisitRecord.objects.all()
-
-    # Применяем фильтры
-    if filters.get('branch'):
-        visits = visits.filter(clinic_branch_id=filters['branch'])
-    if filters.get('room'):
-        visits = visits.filter(clinic_room_id=filters['room'])
-    if filters.get('doctor'):
-        visits = visits.filter(doctor_id=filters['doctor'])
-    if filters.get('patient'):
-        visits = visits.filter(patient_id=filters['patient'])
+    # Применение фильтров с помощью Q
+    q_filter = Q()
     
-    # Отправляем отфильтрованные визиты
+    if filters.get('branch'):
+        q_filter &= Q(clinic_branch_id=filters['branch'])
+    
+    if filters.get('room'):
+        q_filter &= Q(clinic_room_id=filters['room'])
+    
+    if filters.get('doctor'):
+        q_filter &= Q(doctor_id=filters['doctor'])
+    
+    if filters.get('patient'):
+        q_filter &= Q(patient_id=filters['patient'])
+
+    visits = queryset.filter(q_filter)
+    
+    # Возвращаем отфильтрованные записи
     return JsonResponse(list(visits.values()), safe=False)
+
 
 
 class FilteredVisitRecords(APIView):
     def post(self, request):
-        try:
-            filters = request.data
-            queryset = VisitRecord.objects.all()
+        filters = request.data
+        print("🔥 Вызвана вьюха: FilteredVisitRecords", flush=True)
+        print(f"🚀 Полученные фильтры: {filters}", flush=True)
 
-            # Фильтрация по филиалу
-            if 'clinic_branch' in filters:
-                queryset = queryset.filter(clinic_branch_id=filters['clinic_branch'])
+        # Инициализируем пустой Q-объект для фильтрации
+        q_filter = Q()
 
-            # Фильтрация по кабинету
-            if 'clinic_room' in filters:
-                queryset = queryset.filter(clinic_room_id=filters['clinic_room'])
+        # Функция для обработки фильтров
+        def safe_int(value):
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                print(f"⚠️ Некорректное значение ID: {value}", flush=True)
+                return None
 
-            # Фильтрация по специализации врача
-            if 'specialization' in filters:
-                queryset = queryset.filter(doctor__specializations__id=filters['specialization'])
+        # Фильтрация по филиалу
+        clinic_branch = safe_int(filters.get('clinic_branch'))
+        if clinic_branch:
+            q_filter &= Q(clinic_branch_id=clinic_branch)
+            print(f"📌 Фильтруем по филиалу: {clinic_branch}", flush=True)
 
-            # Фильтрация по врачу
-            if 'doctor' in filters:
-                queryset = queryset.filter(doctor_id=filters['doctor'])
+        # Фильтрация по кабинету
+        clinic_room = safe_int(filters.get('clinic_room'))
+        if clinic_room:
+            q_filter &= Q(clinic_room_id=clinic_room)
+            print(f"📌 Фильтруем по кабинету: {clinic_room}", flush=True)
 
-            # Фильтрация по пациенту
-            if 'patient' in filters:
-                queryset = queryset.filter(patient_id=filters['patient'])
+        # Фильтрация по специализации врача
+        specialization = safe_int(filters.get('specialization'))
+        if specialization:
+            q_filter &= Q(doctor__specializations__id=specialization)
+            print(f"📌 Фильтруем по специализации: {specialization}", flush=True)
 
-            # Сериализация данных
-            serializer = VisitRecordSerializer(queryset, many=True)
-            return Response(serializer.data)
+        # Фильтрация по врачу
+        doctor = safe_int(filters.get('doctor'))
+        if doctor:
+            q_filter &= Q(doctor_id=doctor)
+            print(f"📌 Фильтруем по врачу: {doctor}", flush=True)
 
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        # Фильтрация по пациенту
+        patient = safe_int(filters.get('patient'))
+        if patient:
+            q_filter &= Q(patient_id=patient)
+            print(f"📌 Фильтруем по пациенту: {patient}", flush=True)
+
+        # Фильтрация по дате начала
+        start_date = filters.get('start_date')
+        if start_date:
+            try:
+                q_filter &= Q(visit_date__gte=start_date)
+                print(f"📌 Фильтруем по дате начала: {start_date}", flush=True)
+            except Exception as e:
+                print(f"⚠️ Ошибка в дате начала: {e}", flush=True)
+
+        # Фильтрация по дате окончания
+        end_date = filters.get('end_date')
+        if end_date:
+            try:
+                q_filter &= Q(visit_date__lte=end_date)
+                print(f"📌 Фильтруем по дате окончания: {end_date}", flush=True)
+            except Exception as e:
+                print(f"⚠️ Ошибка в дате окончания: {e}", flush=True)
+
+        # Логируем итоговый Q-объект перед фильтрацией
+        print(f"🧩 Сформированный Q-объект: {q_filter}", flush=True)
+
+        # Применяем объединенный фильтр к запросу
+        queryset = VisitRecord.objects.filter(q_filter)
+
+        # Количество найденных визитов после фильтрации
+        print(f"📥 Найдено визитов: {queryset.count()}", flush=True)
+
+        # Сериализация данных
+        serializer = VisitRecordSerializer(queryset, many=True)
+        print(f"📤 Отправляем на фронт: {serializer.data}", flush=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
         
 class SpecializationListView(APIView):
     def get(self, request):
@@ -122,10 +222,16 @@ class UpdateVisitView(RetrieveUpdateAPIView):
         visit.visit_date = data.get("visit_date") or visit.visit_date
         visit.visit_time = data.get("visit_time") or visit.visit_time
         visit.visit_end_time = data.get("visit_end_time") or visit.visit_end_time
+        visit.visit_end_date = data.get("visit_end_date") or visit.visit_end_date
         visit.duration_minutes = data.get("duration_minutes") or visit.duration_minutes
         visit.description = data.get("description") or visit.description
         visit.payment_status = data.get("payment_status") or visit.payment_status
         visit.discount_percent = data.get("discount_percent", visit.discount_percent)
+
+        if visit.visit_end_time == "00:00:00" and visit.visit_end_date == visit.visit_date:
+            if isinstance(visit.visit_end_date, str):
+                visit.visit_end_date = datetime.strptime(visit.visit_end_date, "%Y-%m-%d").date()
+            visit.visit_end_date += timedelta(days=1)
 
         # Обновляем список услуг со скидкой
         discounted = data.get("discounted_services")
@@ -137,6 +243,8 @@ class UpdateVisitView(RetrieveUpdateAPIView):
             visit.clinic_branch = ClinicBranch.objects.get(pk=data["clinic_branch"])
         if "clinic_room" in data:
             visit.clinic_room = ClinicRoom.objects.get(pk=data["clinic_room"])
+
+            
 
         visit.save()
         print("✅ Данные после сохранения:", visit.clinic_branch_id, visit.clinic_room_id)  # 👉 Посмотри, что реально сохраняется
@@ -156,6 +264,7 @@ def update_visit(request, visit_id):
         visit.doctor_id = data.get("doctor", visit.doctor_id)
         visit.visit_date = data.get("visit_date", visit.visit_date)
         visit.visit_time = data.get("visit_time", visit.visit_time)
+        visit.visit_end_date = data.get("visit_end_date") or visit.visit_end_date
         visit.visit_end_time = data.get("visit_end_time", visit.visit_end_time)
         visit.description = data.get("description", visit.description)
         visit.payment_status = data.get("payment_status", visit.payment_status)
@@ -164,6 +273,12 @@ def update_visit(request, visit_id):
         services = data.get("services_ids") or data.get("services")
         if services is not None:
             visit.services.set(services)
+
+        
+        if visit.visit_end_time == "00:00:00" and visit.visit_end_date == visit.visit_date:
+            if isinstance(visit.visit_end_date, str):
+                visit.visit_end_date = datetime.strptime(visit.visit_end_date, "%Y-%m-%d").date()
+            visit.visit_end_date += timedelta(days=1)    
 
         visit.save()
         return JsonResponse({"message": "✅ Визит обновлен"}, status=200)
@@ -184,6 +299,7 @@ class DeleteVisitRecordView(APIView):
 class VisitRecordViewSet(viewsets.ModelViewSet):
     """📅 API для управления записями на прием"""
     queryset = VisitRecord.objects.all()
+    print("🔥 Вызвана вьюха: VisitRecordViewSet", flush=True)
     serializer_class = VisitRecordSerializer
 
     def get_serializer_class(self):
@@ -239,6 +355,26 @@ class ServiceListView(generics.ListAPIView):
 class DoctorListView(generics.ListAPIView):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
+    
+class DoctorsBySpecializationAPIView(APIView):
+    def get(self, request, specialization_id):
+        try:
+            doctors = Doctor.objects.filter(specializations__id=specialization_id)
+            serializer = DoctorSerializer(doctors, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def doctors_by_specialization(request, specialization_id):
+    try:
+        doctors = Doctor.objects.filter(specializations__id=specialization_id)
+        doctor_data = [{"id": doctor.id, "fool_name": doctor.fool_name} for doctor in doctors]
+        return Response(doctor_data)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+    
+    
 
 class PatientListView(generics.ListAPIView):
     queryset = Pacient.objects.all()
